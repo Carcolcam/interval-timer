@@ -53,10 +53,10 @@ export interface PlaybackStep {
 }
 
 export const KIND_LABELS: Record<IntervalKind, string> = {
-  prepare: "Preparación",
-  work: "Trabajo",
-  rest: "Descanso",
-  restBetweenSets: "Descanso entre sets",
+  prepare: "¿Listos?",
+  work: "¡Vamos!",
+  rest: "Respira",
+  restBetweenSets: "Recupera",
   cooldown: "Enfriamiento"
 };
 

@@ -296,14 +296,62 @@ export function vibrate(pattern: number | number[]): void {
   }
 }
 
+let preferredVoice: SpeechSynthesisVoice | null = null;
+
+/** Picks the most natural Spanish voice available on the device. */
+function pickVoice(): SpeechSynthesisVoice | null {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+    return null;
+  }
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return preferredVoice;
+
+  const spanish = voices.filter((v) =>
+    (v.lang || "").toLowerCase().startsWith("es")
+  );
+  const pool = spanish.length ? spanish : voices;
+
+  const score = (v: SpeechSynthesisVoice): number => {
+    const name = `${v.name} ${v.voiceURI}`.toLowerCase();
+    let s = 0;
+    // Higher-quality / neural voices on iOS & Android
+    if (/(enhanced|premium|neural|natural|siri)/.test(name)) s += 12;
+    // Known good Spanish voices
+    if (/(m[oó]nica|paulina|marisol|luc[ií]a|elena|sof[ií]a|jorge)/.test(name)) {
+      s += 5;
+    }
+    if ((v.lang || "").toLowerCase() === "es-es") s += 3;
+    if ((v.lang || "").toLowerCase() === "es-mx") s += 2;
+    if (v.localService) s += 1;
+    return s;
+  };
+
+  preferredVoice =
+    [...pool].sort((a, b) => score(b) - score(a))[0] ?? null;
+  return preferredVoice;
+}
+
+if (typeof window !== "undefined" && "speechSynthesis" in window) {
+  pickVoice();
+  window.speechSynthesis.onvoiceschanged = () => pickVoice();
+}
+
 export function speak(text: string, enabled: boolean): void {
   if (!enabled) return;
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   try {
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = "es-ES";
-    u.rate = 1;
-    u.pitch = 1;
+    const voice = preferredVoice ?? pickVoice();
+    if (voice) {
+      u.voice = voice;
+      u.lang = voice.lang;
+    } else {
+      u.lang = "es-ES";
+    }
+    // Slightly brighter and energetic for a more motivating delivery.
+    u.rate = 1.05;
+    u.pitch = 1.12;
+    u.volume = 1;
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(u);
   } catch {

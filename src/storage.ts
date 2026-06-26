@@ -18,9 +18,9 @@ export function defaultWorkouts(): Workout[] {
     id: uid(),
     name: "Tabata clásico",
     intervals: [
-      mk("prepare", "Prepárate", 10),
-      mk("work", "Trabajo", 20),
-      mk("rest", "Descanso", 10)
+      mk("prepare", "¿Listos?", 10),
+      mk("work", "¡Vamos!", 20),
+      mk("rest", "Respira", 10)
     ],
     rounds: 8,
     sets: 1,
@@ -39,9 +39,9 @@ export function defaultWorkouts(): Workout[] {
     id: uid(),
     name: "HIIT 40/20",
     intervals: [
-      mk("prepare", "Prepárate", 15),
-      mk("work", "Trabajo", 40),
-      mk("rest", "Descanso", 20)
+      mk("prepare", "¿Listos?", 15),
+      mk("work", "¡Vamos!", 40),
+      mk("rest", "Respira", 20)
     ],
     rounds: 6,
     sets: 3,
@@ -59,7 +59,7 @@ export function defaultWorkouts(): Workout[] {
     id: uid(),
     name: "Circuito full body",
     intervals: [
-      mk("prepare", "Prepárate", 10),
+      mk("prepare", "¿Listos?", 10),
       mk("work", "Ejercicio", 45),
       mk("rest", "Cambio", 15)
     ],
@@ -83,9 +83,22 @@ export function defaultWorkouts(): Workout[] {
   return [tabata, hiit, circuit];
 }
 
+// Migrate names from the old wording to the new motivating words.
+const NAME_MIGRATION: Record<string, string> = {
+  "Preparación": "¿Listos?",
+  "Prepárate": "¿Listos?",
+  "Trabajo": "¡Vamos!",
+  "Descanso": "Respira",
+  "Descanso entre sets": "Recupera"
+};
+
 export function normalizeWorkout(workout: Workout): Workout {
   return {
     ...workout,
+    intervals: workout.intervals.map((interval) => ({
+      ...interval,
+      name: NAME_MIGRATION[interval.name] ?? interval.name
+    })),
     exercises: (workout.exercises ?? []).map((exercise) => ({
       id: exercise.id || uid(),
       name: exercise.name || "Ejercicio"
@@ -117,9 +130,9 @@ export function emptyWorkout(): Workout {
     id: uid(),
     name: "Nueva rutina",
     intervals: [
-      mk("prepare", "Prepárate", 10),
-      mk("work", "Trabajo", 30),
-      mk("rest", "Descanso", 15)
+      mk("prepare", "¿Listos?", 10),
+      mk("work", "¡Vamos!", 30),
+      mk("rest", "Respira", 15)
     ],
     exercises: [
       { id: uid(), name: "Ejercicio 1" },

@@ -139,7 +139,9 @@ export function Player({ workout, settings, onSettingsChange, onExit }: Props) {
             <ProgressRing progress={ringProgress} color="#ffffff">
               <div className="ring-content">
                 <div className="big-time">{formatTime(remaining)}</div>
-                <div className="phase-name">{current?.name}</div>
+                {current && current.name !== KIND_LABELS[current.kind] && (
+                  <div className="phase-name">{current.name}</div>
+                )}
                 {current?.exerciseName && (
                   <div className="interval-caption">{current.intervalName}</div>
                 )}

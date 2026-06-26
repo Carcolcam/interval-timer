@@ -18,6 +18,20 @@ export function UpdateBanner() {
 
   if (!needRefresh) return null;
 
+  const handleUpdate = async () => {
+    try {
+      // Reload once the new service worker takes control.
+      navigator.serviceWorker?.addEventListener("controllerchange", () => {
+        window.location.reload();
+      });
+      await updateServiceWorker(true);
+    } catch {
+      /* ignore */
+    }
+    // iOS standalone PWAs sometimes don't auto-reload after activation.
+    window.setTimeout(() => window.location.reload(), 1500);
+  };
+
   return (
     <div className="update-banner" role="alert">
       <div className="update-banner-text">
@@ -25,10 +39,7 @@ export function UpdateBanner() {
         <span>v{APP_VERSION} — pulsa actualizar para cargar los últimos cambios</span>
       </div>
       <div className="update-banner-actions">
-        <button
-          className="btn primary"
-          onClick={() => void updateServiceWorker(true)}
-        >
+        <button className="btn primary" onClick={() => void handleUpdate()}>
           Actualizar
         </button>
         <button className="btn ghost" onClick={() => setNeedRefresh(false)}>
