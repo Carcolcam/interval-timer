@@ -96,7 +96,12 @@ export function usePlayer(
       const s = settingsRef.current;
       if (whole <= 5 && whole > 0) {
         if (s.sound) beepCountdown(whole);
-        if (s.vibration) vibrate(whole <= 2 ? 180 : whole <= 3 ? 120 : 80);
+        if (s.vibration) {
+          if (whole === 1) vibrate([300, 80, 300]);
+          else if (whole === 2) vibrate(250);
+          else if (whole === 3) vibrate(140);
+          else vibrate(90);
+        }
       }
     }
 
