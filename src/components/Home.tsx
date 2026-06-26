@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import type { Workout } from "../types";
 import { formatTime, totalDuration } from "../engine";
+import { APP_VERSION } from "../version";
 
 interface Props {
   workouts: Workout[];
@@ -129,6 +130,8 @@ export function Home({
       <button className="fab" onClick={onCreate} aria-label="Nueva rutina">
         +
       </button>
+
+      <p className="app-version">v{APP_VERSION}</p>
     </div>
   );
 }

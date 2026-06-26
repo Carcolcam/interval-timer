@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import type { Workout } from "./types";
 import {
   emptyWorkout,
@@ -10,6 +10,7 @@ import { uid } from "./utils";
 import { Home } from "./components/Home";
 import { Editor } from "./components/Editor";
 import { Player } from "./components/Player";
+import { UpdateBanner } from "./components/UpdateBanner";
 import type { PlayerSettings } from "./usePlayer";
 
 type Screen =
@@ -127,13 +128,15 @@ export function App() {
 
   const find = (id: string) => workouts.find((w) => w.id === id);
 
+  let content: ReactNode;
+
   if (screen.name === "editor") {
     const w = find(screen.id);
     if (!w) {
       setScreen({ name: "home" });
       return null;
     }
-    return (
+    content = (
       <Editor
         workout={w}
         onSave={(updated) => {
@@ -147,15 +150,13 @@ export function App() {
         }}
       />
     );
-  }
-
-  if (screen.name === "player") {
+  } else if (screen.name === "player") {
     const w = find(screen.id);
     if (!w) {
       setScreen({ name: "home" });
       return null;
     }
-    return (
+    content = (
       <Player
         workout={w}
         settings={settings}
@@ -163,18 +164,25 @@ export function App() {
         onExit={() => setScreen({ name: "home" })}
       />
     );
+  } else {
+    content = (
+      <Home
+        workouts={workouts}
+        onCreate={createNew}
+        onPlay={(id) => setScreen({ name: "player", id })}
+        onEdit={(id) => setScreen({ name: "editor", id })}
+        onDuplicate={duplicate}
+        onDelete={remove}
+        onExport={exportWorkout}
+        onImport={importWorkout}
+      />
+    );
   }
 
   return (
-    <Home
-      workouts={workouts}
-      onCreate={createNew}
-      onPlay={(id) => setScreen({ name: "player", id })}
-      onEdit={(id) => setScreen({ name: "editor", id })}
-      onDuplicate={duplicate}
-      onDelete={remove}
-      onExport={exportWorkout}
-      onImport={importWorkout}
-    />
+    <>
+      <UpdateBanner />
+      {content}
+    </>
   );
 }
