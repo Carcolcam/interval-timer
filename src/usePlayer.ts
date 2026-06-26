@@ -102,6 +102,15 @@ export function usePlayer(
       const isWork = step?.kind === "work";
       if (whole <= 5 && whole > 0) {
         if (s.sound) beepCountdown(whole, isWork);
+        // Spoken countdown ducks music on iOS, so it's audible over Spotify.
+        if (s.voice && whole <= 3) {
+          const words: Record<number, string> = {
+            3: "tres",
+            2: "dos",
+            1: "uno"
+          };
+          speak(words[whole], true);
+        }
         if (s.vibration) {
           if (isWork && whole === 1) vibrate([300, 80, 300]);
           else if (isWork && whole === 2) vibrate(250);
