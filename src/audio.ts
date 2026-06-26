@@ -77,27 +77,50 @@ export function unlockAudio(): void {
   osc.stop(c.currentTime + 0.02);
 }
 
-function tone(freq: number, durationMs: number, when = 0, volume = 0.3): void {
+function tone(
+  freq: number,
+  durationMs: number,
+  when = 0,
+  volume = 0.3,
+  wave: OscillatorType = "sine",
+  hold = false
+): void {
   const c = getCtx();
   if (!c) return;
   if (c.state === "suspended") void c.resume();
   const start = c.currentTime + when;
+  const end = start + durationMs / 1000;
   const osc = c.createOscillator();
   const gain = c.createGain();
-  osc.type = "sine";
+  osc.type = wave;
   osc.frequency.value = freq;
   gain.gain.setValueAtTime(0.0001, start);
-  gain.gain.exponentialRampToValueAtTime(volume, start + 0.01);
-  gain.gain.exponentialRampToValueAtTime(0.0001, start + durationMs / 1000);
+  gain.gain.exponentialRampToValueAtTime(volume, start + 0.02);
+  if (hold && durationMs > 80) {
+    gain.gain.setValueAtTime(volume, end - 0.06);
+  }
+  gain.gain.exponentialRampToValueAtTime(0.0001, end);
   osc.connect(gain);
   gain.connect(c.destination);
   osc.start(start);
-  osc.stop(start + durationMs / 1000 + 0.02);
+  osc.stop(end + 0.02);
 }
 
-/** Short tick for the final countdown seconds (3-2-1). */
-export function beepCountdown(): void {
-  tone(880, 140, 0, 0.25);
+/** Countdown beeps from 5→1: volume rises; last two last 2 s and are loudest. */
+export function beepCountdown(secondsRemaining: number): void {
+  const profiles: Record<
+    number,
+    { durationMs: number; volume: number; freq: number; wave: OscillatorType }
+  > = {
+    5: { durationMs: 130, volume: 0.45, freq: 880, wave: "square" },
+    4: { durationMs: 150, volume: 0.58, freq: 940, wave: "square" },
+    3: { durationMs: 170, volume: 0.72, freq: 1020, wave: "square" },
+    2: { durationMs: 2000, volume: 0.92, freq: 1180, wave: "square" },
+    1: { durationMs: 2000, volume: 1.0, freq: 1400, wave: "square" }
+  };
+  const p = profiles[secondsRemaining];
+  if (!p) return;
+  tone(p.freq, p.durationMs, 0, p.volume, p.wave, secondsRemaining <= 2);
 }
 
 /** Longer, higher tone when a new interval starts. */

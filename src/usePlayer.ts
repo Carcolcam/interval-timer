@@ -94,9 +94,9 @@ export function usePlayer(
     if (whole !== lastWholeRef.current) {
       lastWholeRef.current = whole;
       const s = settingsRef.current;
-      if (whole <= 3 && whole > 0) {
-        if (s.sound) beepCountdown();
-        if (s.vibration) vibrate(80);
+      if (whole <= 5 && whole > 0) {
+        if (s.sound) beepCountdown(whole);
+        if (s.vibration) vibrate(whole <= 2 ? 180 : whole <= 3 ? 120 : 80);
       }
     }
 
