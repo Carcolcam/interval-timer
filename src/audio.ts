@@ -115,12 +115,12 @@ export function beepCountdown(secondsRemaining: number): void {
     5: { durationMs: 130, volume: 0.45, freq: 880, wave: "square" },
     4: { durationMs: 150, volume: 0.58, freq: 940, wave: "square" },
     3: { durationMs: 170, volume: 0.72, freq: 1020, wave: "square" },
-    2: { durationMs: 2000, volume: 0.92, freq: 1180, wave: "square" },
+    2: { durationMs: 190, volume: 0.85, freq: 1180, wave: "square" },
     1: { durationMs: 2000, volume: 1.0, freq: 1400, wave: "square" }
   };
   const p = profiles[secondsRemaining];
   if (!p) return;
-  tone(p.freq, p.durationMs, 0, p.volume, p.wave, secondsRemaining <= 2);
+  tone(p.freq, p.durationMs, 0, p.volume, p.wave, secondsRemaining === 1);
 }
 
 /** Longer, higher tone when a new interval starts. */
