@@ -92,6 +92,26 @@ function ensureCtx(): AudioContext | null {
   return c;
 }
 
+/**
+ * Resume audio after an interruption (incoming call, Siri, control center).
+ * iOS suspends the AudioContext during a call; we wake it back up on return.
+ */
+export function resumeAudioAfterInterruption(): void {
+  const c = ctx;
+  if (!c) return;
+  if (c.state === "suspended") {
+    void c.resume().then(() => startKeepAlive(c));
+  }
+}
+
+if (typeof document !== "undefined") {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") resumeAudioAfterInterruption();
+  });
+  window.addEventListener("focus", resumeAudioAfterInterruption);
+  window.addEventListener("pageshow", resumeAudioAfterInterruption);
+}
+
 function tone(
   freq: number,
   durationMs: number,

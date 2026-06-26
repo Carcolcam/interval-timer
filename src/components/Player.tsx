@@ -36,6 +36,7 @@ export function Player({ workout, settings, onSettingsChange, onExit }: Props) {
   } = player;
 
   const [flashClass, setFlashClass] = useState("");
+  const [showMusicHint, setShowMusicHint] = useState(true);
   const lastFlashSec = useRef(-1);
 
   const wholeRemaining = Math.ceil(remaining);
@@ -137,6 +138,23 @@ export function Player({ workout, settings, onSettingsChange, onExit }: Props) {
           </button>
         </div>
       </div>
+
+      {settings.mixWithMusic && showMusicHint && (
+        <div className="music-hint">
+          <span>
+            🎵 Con música puesta, iPhone no puede bajarla para los avisos. Si no
+            oyes los pitidos, apaga 🎵 (la música se pausará un instante en cada
+            aviso).
+          </span>
+          <button
+            className="music-hint-close"
+            onClick={() => setShowMusicHint(false)}
+            aria-label="Cerrar aviso"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <div className="player-center">
         {finished ? (
