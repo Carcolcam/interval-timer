@@ -233,28 +233,50 @@ function beepExplosion(): void {
 }
 
 /**
- * Countdown 5→1:
- * 5 medio · 4 alto · 3 muy alto · 2 largo máximo · 1 explosión nuclear 3 s
+ * Countdown 5→1.
+ * Work: 5 medio · 4 alto · 3 muy alto · 2 largo máximo · 1 explosión nuclear.
+ * Other phases: escalating short beeps only.
  */
-export function beepCountdown(secondsRemaining: number): void {
-  if (secondsRemaining === 1) {
-    beepExplosion();
+export function beepCountdown(
+  secondsRemaining: number,
+  isWork = false
+): void {
+  if (isWork) {
+    if (secondsRemaining === 1) {
+      beepExplosion();
+      return;
+    }
+
+    const workProfiles: Record<
+      number,
+      { durationMs: number; volume: number; freq: number; wave: OscillatorType }
+    > = {
+      5: { durationMs: 130, volume: 0.55, freq: 880, wave: "square" },
+      4: { durationMs: 130, volume: 0.72, freq: 1000, wave: "square" },
+      3: { durationMs: 130, volume: 0.88, freq: 1150, wave: "square" },
+      2: { durationMs: 2000, volume: 1.0, freq: 1300, wave: "square" }
+    };
+
+    const p = workProfiles[secondsRemaining];
+    if (!p) return;
+    tone(p.freq, p.durationMs, 0, p.volume, p.wave, secondsRemaining === 2);
     return;
   }
 
-  const profiles: Record<
+  const simpleProfiles: Record<
     number,
-    { durationMs: number; volume: number; freq: number; wave: OscillatorType }
+    { durationMs: number; volume: number; freq: number }
   > = {
-    5: { durationMs: 130, volume: 0.55, freq: 880, wave: "square" },
-    4: { durationMs: 130, volume: 0.72, freq: 1000, wave: "square" },
-    3: { durationMs: 130, volume: 0.88, freq: 1150, wave: "square" },
-    2: { durationMs: 2000, volume: 1.0, freq: 1300, wave: "square" }
+    5: { durationMs: 130, volume: 0.55, freq: 880 },
+    4: { durationMs: 130, volume: 0.72, freq: 1000 },
+    3: { durationMs: 130, volume: 0.88, freq: 1150 },
+    2: { durationMs: 130, volume: 0.95, freq: 1300 },
+    1: { durationMs: 130, volume: 1.0, freq: 1400 }
   };
 
-  const p = profiles[secondsRemaining];
+  const p = simpleProfiles[secondsRemaining];
   if (!p) return;
-  tone(p.freq, p.durationMs, 0, p.volume, p.wave, secondsRemaining === 2);
+  tone(p.freq, p.durationMs, 0, p.volume, "square");
 }
 
 /** Final cue when the workout ends. */

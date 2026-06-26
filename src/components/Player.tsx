@@ -41,6 +41,7 @@ export function Player({ workout, settings, onSettingsChange, onExit }: Props) {
   const wholeRemaining = Math.ceil(remaining);
   const inCountdown =
     running && !finished && wholeRemaining <= 5 && wholeRemaining > 0;
+  const isWorkPhase = current?.kind === "work";
 
   useEffect(() => {
     return () => {
@@ -54,19 +55,23 @@ export function Player({ workout, settings, onSettingsChange, onExit }: Props) {
     if (!inCountdown || wholeRemaining === lastFlashSec.current) return;
     lastFlashSec.current = wholeRemaining;
 
-    if (wholeRemaining === 1) {
+    if (wholeRemaining === 1 && isWorkPhase) {
       setFlashClass("flash-nuke");
-    } else if (wholeRemaining === 2) {
+    } else if (wholeRemaining === 2 && isWorkPhase) {
       setFlashClass("flash-long");
     } else {
       setFlashClass(`flash-${wholeRemaining}`);
     }
 
     const ms =
-      wholeRemaining === 1 ? 3000 : wholeRemaining === 2 ? 2000 : 220;
+      wholeRemaining === 1 && isWorkPhase
+        ? 3000
+        : wholeRemaining === 2 && isWorkPhase
+          ? 2000
+          : 220;
     const timer = window.setTimeout(() => setFlashClass(""), ms);
     return () => window.clearTimeout(timer);
-  }, [inCountdown, wholeRemaining]);
+  }, [inCountdown, wholeRemaining, isWorkPhase]);
 
   useEffect(() => {
     if (!inCountdown) lastFlashSec.current = -1;

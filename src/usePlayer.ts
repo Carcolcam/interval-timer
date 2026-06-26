@@ -51,8 +51,10 @@ export function usePlayer(
   const rafRef = useRef<number | null>(null);
   const stepEndRef = useRef<number>(0);
   const lastWholeRef = useRef<number>(-1);
+  const currentIndexRef = useRef(0);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
+  currentIndexRef.current = currentIndex;
 
   const current = steps[currentIndex] ?? null;
   const next = steps[currentIndex + 1] ?? null;
@@ -94,11 +96,13 @@ export function usePlayer(
     if (whole !== lastWholeRef.current) {
       lastWholeRef.current = whole;
       const s = settingsRef.current;
+      const step = steps[currentIndexRef.current];
+      const isWork = step?.kind === "work";
       if (whole <= 5 && whole > 0) {
-        if (s.sound) beepCountdown(whole);
+        if (s.sound) beepCountdown(whole, isWork);
         if (s.vibration) {
-          if (whole === 1) vibrate([300, 80, 300]);
-          else if (whole === 2) vibrate(250);
+          if (isWork && whole === 1) vibrate([300, 80, 300]);
+          else if (isWork && whole === 2) vibrate(250);
           else if (whole === 3) vibrate(140);
           else vibrate(90);
         }
