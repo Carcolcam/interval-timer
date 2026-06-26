@@ -114,7 +114,8 @@ function bellPartial(
   osc.type = "sine";
   osc.frequency.value = freq;
   gain.gain.setValueAtTime(0.0001, when);
-  gain.gain.exponentialRampToValueAtTime(volume, when + 0.008);
+  gain.gain.exponentialRampToValueAtTime(volume, when + 0.01);
+  gain.gain.setValueAtTime(volume * 0.85, when + 0.08);
   gain.gain.exponentialRampToValueAtTime(0.0001, when + decaySec);
   osc.connect(gain);
   gain.connect(c.destination);
@@ -122,83 +123,118 @@ function bellPartial(
   osc.stop(when + decaySec + 0.05);
 }
 
-/** Loud boxing-ring bell when a new interval starts. */
+/** Boxing bell — 2 s sustained ring. */
 export function beepGo(): void {
   const c = ensureCtx();
   if (!c) return;
   const t = c.currentTime;
+  const bellDur = 2.0;
 
   const partials = [
-    { freq: 480, vol: 0.95, decay: 2.4 },
-    { freq: 720, vol: 0.9, decay: 2.0 },
-    { freq: 960, vol: 0.8, decay: 1.6 },
-    { freq: 1440, vol: 0.65, decay: 1.2 },
-    { freq: 1920, vol: 0.5, decay: 0.9 },
-    { freq: 2400, vol: 0.35, decay: 0.6 }
+    { freq: 480, vol: 0.95 },
+    { freq: 720, vol: 0.9 },
+    { freq: 960, vol: 0.82 },
+    { freq: 1440, vol: 0.68 },
+    { freq: 1920, vol: 0.52 }
   ];
   for (const p of partials) {
-    bellPartial(c, p.freq, p.vol, t, p.decay);
+    bellPartial(c, p.freq, p.vol, t, bellDur);
   }
-  // Double strike — classic ring bell feel
-  bellPartial(c, 560, 0.75, t + 0.12, 1.8);
-  bellPartial(c, 840, 0.6, t + 0.12, 1.4);
-  bellPartial(c, 1120, 0.45, t + 0.12, 1.0);
+  bellPartial(c, 560, 0.7, t + 0.1, bellDur);
+  bellPartial(c, 840, 0.55, t + 0.1, bellDur * 0.9);
 }
 
-/** Short burst + low boom for the final countdown second. */
+function makeBrownNoise(
+  c: AudioContext,
+  durationSec: number
+): AudioBufferSourceNode {
+  const samples = Math.floor(c.sampleRate * durationSec);
+  const buffer = c.createBuffer(1, samples, c.sampleRate);
+  const data = buffer.getChannelData(0);
+  let last = 0;
+  for (let i = 0; i < samples; i++) {
+    const white = Math.random() * 2 - 1;
+    last = (last + 0.02 * white) / 1.02;
+    data[i] = last * 3.5;
+  }
+  const src = c.createBufferSource();
+  src.buffer = buffer;
+  return src;
+}
+
+/** Nuclear shockwave — 3 s deep rumble + roar (no sharp grenade crack). */
 function beepExplosion(): void {
   const c = ensureCtx();
   if (!c) return;
   const t = c.currentTime;
-  const dur = 0.75;
-  const samples = Math.floor(c.sampleRate * dur);
-  const buffer = c.createBuffer(1, samples, c.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < samples; i++) {
-    const env = Math.exp(-i / (c.sampleRate * 0.12));
-    data[i] = (Math.random() * 2 - 1) * env;
-  }
-  const noise = c.createBufferSource();
-  noise.buffer = buffer;
+  const dur = 3.0;
+
+  const rumble = c.createOscillator();
+  rumble.type = "sine";
+  rumble.frequency.setValueAtTime(55, t);
+  rumble.frequency.exponentialRampToValueAtTime(18, t + dur);
+  const rumbleGain = c.createGain();
+  rumbleGain.gain.setValueAtTime(0.0001, t);
+  rumbleGain.gain.exponentialRampToValueAtTime(1.0, t + 0.15);
+  rumbleGain.gain.setValueAtTime(0.85, t + 0.8);
+  rumbleGain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+  const sub = c.createOscillator();
+  sub.type = "triangle";
+  sub.frequency.setValueAtTime(28, t);
+  sub.frequency.exponentialRampToValueAtTime(12, t + dur * 0.9);
+  const subGain = c.createGain();
+  subGain.gain.setValueAtTime(0.0001, t);
+  subGain.gain.exponentialRampToValueAtTime(0.9, t + 0.25);
+  subGain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+  const noise = makeBrownNoise(c, dur);
+  const filter = c.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(180, t);
+  filter.frequency.exponentialRampToValueAtTime(60, t + dur);
+  filter.Q.value = 0.7;
   const noiseGain = c.createGain();
   noiseGain.gain.setValueAtTime(0.0001, t);
-  noiseGain.gain.exponentialRampToValueAtTime(1.0, t + 0.008);
-  noiseGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+  noiseGain.gain.exponentialRampToValueAtTime(0.95, t + 0.4);
+  noiseGain.gain.setValueAtTime(0.75, t + 1.2);
+  noiseGain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
 
-  const boom = c.createOscillator();
-  boom.type = "sine";
-  boom.frequency.setValueAtTime(90, t);
-  boom.frequency.exponentialRampToValueAtTime(35, t + 0.35);
-  const boomGain = c.createGain();
-  boomGain.gain.setValueAtTime(0.0001, t);
-  boomGain.gain.exponentialRampToValueAtTime(1.0, t + 0.01);
-  boomGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+  const roar = makeBrownNoise(c, dur);
+  const roarFilter = c.createBiquadFilter();
+  roarFilter.type = "bandpass";
+  roarFilter.frequency.setValueAtTime(120, t + 0.2);
+  roarFilter.frequency.exponentialRampToValueAtTime(40, t + dur);
+  roarFilter.Q.value = 1.2;
+  const roarGain = c.createGain();
+  roarGain.gain.setValueAtTime(0.0001, t + 0.15);
+  roarGain.gain.exponentialRampToValueAtTime(0.7, t + 0.6);
+  roarGain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
 
-  const crack = c.createOscillator();
-  crack.type = "square";
-  crack.frequency.value = 2200;
-  const crackGain = c.createGain();
-  crackGain.gain.setValueAtTime(0.0001, t);
-  crackGain.gain.exponentialRampToValueAtTime(0.85, t + 0.005);
-  crackGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-
-  noise.connect(noiseGain);
+  rumble.connect(rumbleGain);
+  rumbleGain.connect(c.destination);
+  sub.connect(subGain);
+  subGain.connect(c.destination);
+  noise.connect(filter);
+  filter.connect(noiseGain);
   noiseGain.connect(c.destination);
-  boom.connect(boomGain);
-  boomGain.connect(c.destination);
-  crack.connect(crackGain);
-  crackGain.connect(c.destination);
+  roar.connect(roarFilter);
+  roarFilter.connect(roarGain);
+  roarGain.connect(c.destination);
+
+  rumble.start(t);
+  sub.start(t);
   noise.start(t);
-  boom.start(t);
-  crack.start(t);
-  noise.stop(t + dur);
-  boom.stop(t + 0.5);
-  crack.stop(t + 0.25);
+  roar.start(t);
+  rumble.stop(t + dur + 0.1);
+  sub.stop(t + dur + 0.1);
+  noise.stop(t + dur + 0.1);
+  roar.stop(t + dur + 0.1);
 }
 
 /**
- * Countdown 5→1 before interval change:
- * 5 medio · 4 alto · 3 muy alto · 2 largo máximo · 1 explosión
+ * Countdown 5→1:
+ * 5 medio · 4 alto · 3 muy alto · 2 largo máximo · 1 explosión nuclear 3 s
  */
 export function beepCountdown(secondsRemaining: number): void {
   if (secondsRemaining === 1) {

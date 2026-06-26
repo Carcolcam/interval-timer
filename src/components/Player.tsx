@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Workout } from "../types";
 import { KIND_LABELS } from "../types";
 import { formatTime } from "../engine";
@@ -35,6 +35,13 @@ export function Player({ workout, settings, onSettingsChange, onExit }: Props) {
     steps
   } = player;
 
+  const [flashClass, setFlashClass] = useState("");
+  const lastFlashSec = useRef(-1);
+
+  const wholeRemaining = Math.ceil(remaining);
+  const inCountdown =
+    running && !finished && wholeRemaining <= 5 && wholeRemaining > 0;
+
   useEffect(() => {
     return () => {
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -43,17 +50,42 @@ export function Player({ workout, settings, onSettingsChange, onExit }: Props) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!inCountdown || wholeRemaining === lastFlashSec.current) return;
+    lastFlashSec.current = wholeRemaining;
+
+    if (wholeRemaining === 1) {
+      setFlashClass("flash-nuke");
+    } else if (wholeRemaining === 2) {
+      setFlashClass("flash-long");
+    } else {
+      setFlashClass(`flash-${wholeRemaining}`);
+    }
+
+    const ms =
+      wholeRemaining === 1 ? 3000 : wholeRemaining === 2 ? 2000 : 220;
+    const timer = window.setTimeout(() => setFlashClass(""), ms);
+    return () => window.clearTimeout(timer);
+  }, [inCountdown, wholeRemaining]);
+
+  useEffect(() => {
+    if (!inCountdown) lastFlashSec.current = -1;
+  }, [inCountdown]);
+
   const bg = finished ? "#10381f" : current?.color ?? "#0b0f14";
-  const stepProgress =
-    current && current.duration > 0
-      ? 1 - remaining / current.duration
-      : 0;
+  const ringProgress =
+    current && current.duration > 0 ? remaining / current.duration : 0;
 
   const toggleSetting = (key: keyof PlayerSettings) =>
     onSettingsChange({ ...settings, [key]: !settings[key] });
 
   return (
-    <div className="screen player" style={{ background: bg }}>
+    <div
+      className={`screen player ${flashClass}`}
+      style={{ background: bg }}
+    >
+      <div className="player-flash-overlay" aria-hidden="true" />
+
       <div className="player-top">
         <button className="btn ghost light" onClick={onExit}>
           ✕
@@ -99,7 +131,7 @@ export function Player({ workout, settings, onSettingsChange, onExit }: Props) {
             <div className="phase-label">
               {current ? KIND_LABELS[current.kind] : ""}
             </div>
-            <ProgressRing progress={stepProgress} color="#ffffff">
+            <ProgressRing progress={ringProgress} color="#ffffff">
               <div className="ring-content">
                 <div className="big-time">{formatTime(remaining)}</div>
                 <div className="phase-name">{current?.name}</div>

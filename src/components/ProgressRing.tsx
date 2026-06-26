@@ -42,7 +42,7 @@ export function ProgressRing({
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
-          style={{ transition: "stroke-dashoffset 0.2s linear" }}
+          className="ring-progress"
         />
       </svg>
       <div className="ring-inner">{children}</div>

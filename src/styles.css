@@ -345,11 +345,157 @@ select {
 
 /* ---------- Player ---------- */
 .player {
+  position: relative;
+  overflow: hidden;
   transition: background 0.4s ease;
   padding: calc(var(--safe-top) + 10px) 16px calc(var(--safe-bottom) + 20px);
   color: white;
 }
+
+/* Ring that closes as time runs out */
+.ring-progress {
+  transition: stroke-dashoffset 0.25s linear;
+}
+
+/* ---------- Countdown flash / explosion effect ---------- */
+.player-flash-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 2;
+  background: #ffffff;
+}
+
+/* Pulse on each of the 5-4-3 countdown beeps (brighter each second) */
+.player.flash-5 .player-flash-overlay {
+  animation: flash-pulse 0.22s ease-out;
+  background: rgba(255, 255, 255, 0.45);
+}
+.player.flash-4 .player-flash-overlay {
+  animation: flash-pulse 0.22s ease-out;
+  background: rgba(255, 230, 120, 0.6);
+}
+.player.flash-3 .player-flash-overlay {
+  animation: flash-pulse 0.22s ease-out;
+  background: rgba(255, 170, 60, 0.72);
+}
+
+/* Second 2: long sustained warning flash */
+.player.flash-long .player-flash-overlay {
+  animation: flash-long 2s ease-out;
+  background: rgba(255, 90, 40, 0.85);
+}
+
+/* Second 1: nuclear explosion — blast flash + shockwave + shake */
+.player.flash-nuke .player-flash-overlay {
+  animation: flash-nuke 3s ease-out forwards;
+  background: radial-gradient(
+    circle at center,
+    #ffffff 0%,
+    #fff4c2 20%,
+    #ffb300 42%,
+    #ff5722 65%,
+    rgba(120, 20, 0, 0) 100%
+  );
+}
+.player.flash-nuke {
+  animation: nuke-shake 0.7s ease-in-out;
+}
+
+@keyframes flash-pulse {
+  0% {
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes flash-long {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.95;
+  }
+  55% {
+    opacity: 0.35;
+  }
+  80% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes flash-nuke {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  6% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  20% {
+    opacity: 1;
+  }
+  45% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes nuke-shake {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  10% {
+    transform: translate(-8px, 6px);
+  }
+  20% {
+    transform: translate(7px, -7px);
+  }
+  30% {
+    transform: translate(-9px, -4px);
+  }
+  40% {
+    transform: translate(8px, 8px);
+  }
+  50% {
+    transform: translate(-6px, 5px);
+  }
+  60% {
+    transform: translate(6px, -6px);
+  }
+  70% {
+    transform: translate(-4px, 3px);
+  }
+  80% {
+    transform: translate(3px, -2px);
+  }
+  90% {
+    transform: translate(-2px, 1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .player.flash-nuke {
+    animation: none;
+  }
+}
 .player-top {
+  position: relative;
+  z-index: 3;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -379,6 +525,8 @@ select {
   background: rgba(255, 255, 255, 0.22);
 }
 .player-center {
+  position: relative;
+  z-index: 3;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -446,6 +594,8 @@ select {
   font-size: 15px;
 }
 .player-progress {
+  position: relative;
+  z-index: 3;
   height: 6px;
   background: rgba(0, 0, 0, 0.25);
   border-radius: 999px;
@@ -458,6 +608,8 @@ select {
   transition: width 0.2s linear;
 }
 .player-controls {
+  position: relative;
+  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: center;
