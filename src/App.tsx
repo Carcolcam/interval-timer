@@ -21,13 +21,19 @@ type Screen =
 const SETTINGS_KEY = "interval-timer:settings:v1";
 
 function loadSettings(): PlayerSettings {
+  const defaults: PlayerSettings = {
+    sound: true,
+    voice: true,
+    vibration: true,
+    mixWithMusic: true
+  };
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    if (raw) return JSON.parse(raw) as PlayerSettings;
+    if (raw) return { ...defaults, ...JSON.parse(raw) };
   } catch {
     /* ignore */
   }
-  return { sound: true, voice: true, vibration: true };
+  return defaults;
 }
 
 export function App() {

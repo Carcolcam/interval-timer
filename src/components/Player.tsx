@@ -4,7 +4,7 @@ import { KIND_LABELS } from "../types";
 import { formatTime } from "../engine";
 import { usePlayer } from "../usePlayer";
 import type { PlayerSettings } from "../usePlayer";
-import { unlockAudio } from "../audio";
+import { unlockAudio, setAudioMixWithMusic } from "../audio";
 import { confirmKeepAwake, useKeepAwake } from "../useKeepAwake";
 import { ProgressRing } from "./ProgressRing";
 
@@ -52,6 +52,10 @@ export function Player({ workout, settings, onSettingsChange, onExit }: Props) {
   }, []);
 
   useEffect(() => {
+    setAudioMixWithMusic(settings.mixWithMusic);
+  }, [settings.mixWithMusic]);
+
+  useEffect(() => {
     if (!inCountdown || wholeRemaining === lastFlashSec.current) return;
     lastFlashSec.current = wholeRemaining;
 
@@ -97,6 +101,16 @@ export function Player({ workout, settings, onSettingsChange, onExit }: Props) {
         </button>
         <div className="player-title">{workout.name}</div>
         <div className="player-toggles">
+          <button
+            className={`pill ${settings.mixWithMusic ? "on" : ""}`}
+            onClick={() => {
+              unlockAudio();
+              toggleSetting("mixWithMusic");
+            }}
+            title="Mezclar con música"
+          >
+            🎵
+          </button>
           <button
             className={`pill ${settings.sound ? "on" : ""}`}
             onClick={() => {

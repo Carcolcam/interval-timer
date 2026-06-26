@@ -5,21 +5,39 @@
 
 let ctx: AudioContext | null = null;
 let keepAlive: OscillatorNode | null = null;
-let audioSessionSet = false;
+let masterGain: GainNode | null = null;
+let mixWithMusic = true;
 
-function configureAudioSession(): void {
-  if (audioSessionSet) return;
+/** Route audio to speakers. ambient = mixes with Spotify/Apple Music. */
+export function setAudioMixWithMusic(mix: boolean): void {
+  mixWithMusic = mix;
   const session = (
     navigator as unknown as { audioSession?: { type?: string } }
   ).audioSession;
   if (session) {
     try {
-      session.type = "playback";
-      audioSessionSet = true;
+      session.type = mix ? "ambient" : "playback";
     } catch {
       /* ignore */
     }
   }
+  const c = getCtx();
+  if (c && masterGain) {
+    masterGain.gain.value = mix ? 1.35 : 1.0;
+  }
+}
+
+function getOutput(c: AudioContext): AudioNode {
+  if (!masterGain) {
+    masterGain = c.createGain();
+    masterGain.gain.value = mixWithMusic ? 1.35 : 1.0;
+    masterGain.connect(c.destination);
+  }
+  return masterGain;
+}
+
+function configureAudioSession(): void {
+  setAudioMixWithMusic(mixWithMusic);
 }
 
 function getCtx(): AudioContext | null {
@@ -43,7 +61,7 @@ function startKeepAlive(c: AudioContext): void {
     gain.gain.value = 0.0001;
     osc.frequency.value = 30;
     osc.connect(gain);
-    gain.connect(c.destination);
+    gain.connect(getOutput(c));
     osc.start();
     keepAlive = osc;
   } catch {
@@ -97,7 +115,7 @@ function tone(
   }
   gain.gain.exponentialRampToValueAtTime(0.0001, end);
   osc.connect(gain);
-  gain.connect(c.destination);
+  gain.connect(getOutput(c));
   osc.start(start);
   osc.stop(end + 0.02);
 }
@@ -118,7 +136,7 @@ function bellPartial(
   gain.gain.setValueAtTime(volume * 0.85, when + 0.08);
   gain.gain.exponentialRampToValueAtTime(0.0001, when + decaySec);
   osc.connect(gain);
-  gain.connect(c.destination);
+  gain.connect(getOutput(c));
   osc.start(when);
   osc.stop(when + decaySec + 0.05);
 }
@@ -212,15 +230,15 @@ function beepExplosion(): void {
   roarGain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
 
   rumble.connect(rumbleGain);
-  rumbleGain.connect(c.destination);
+  rumbleGain.connect(getOutput(c));
   sub.connect(subGain);
-  subGain.connect(c.destination);
+  subGain.connect(getOutput(c));
   noise.connect(filter);
   filter.connect(noiseGain);
-  noiseGain.connect(c.destination);
+  noiseGain.connect(getOutput(c));
   roar.connect(roarFilter);
   roarFilter.connect(roarGain);
-  roarGain.connect(c.destination);
+  roarGain.connect(getOutput(c));
 
   rumble.start(t);
   sub.start(t);

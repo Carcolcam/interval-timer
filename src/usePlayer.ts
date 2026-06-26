@@ -13,6 +13,8 @@ export interface PlayerSettings {
   sound: boolean;
   voice: boolean;
   vibration: boolean;
+  /** When true, timer audio mixes with Spotify/Apple Music instead of pausing it. */
+  mixWithMusic: boolean;
 }
 
 export interface PlayerState {
