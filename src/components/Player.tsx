@@ -36,7 +36,9 @@ export function Player({ workout, settings, onSettingsChange, onExit }: Props) {
   } = player;
 
   const [flashClass, setFlashClass] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
   const lastFlashSec = useRef(-1);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   const wholeRemaining = Math.ceil(remaining);
   const inCountdown =
@@ -54,6 +56,17 @@ export function Player({ workout, settings, onSettingsChange, onExit }: Props) {
   useEffect(() => {
     setAudioMixWithMusic(settings.mixWithMusic);
   }, [settings.mixWithMusic]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [menuOpen]);
 
   useEffect(() => {
     if (!inCountdown || wholeRemaining === lastFlashSec.current) return;
@@ -100,41 +113,69 @@ export function Player({ workout, settings, onSettingsChange, onExit }: Props) {
           ✕
         </button>
         <div className="player-title">{workout.name}</div>
-        <div className="player-toggles">
+        <div className="player-menu" ref={menuRef}>
           <button
-            className={`pill ${settings.mixWithMusic ? "on" : ""}`}
+            className={`btn ghost light hamburger ${menuOpen ? "open" : ""}`}
             onClick={() => {
               unlockAudio();
-              toggleSetting("mixWithMusic");
+              setMenuOpen((o) => !o);
             }}
-            title="Mezclar con música"
+            aria-label="Ajustes"
+            aria-expanded={menuOpen}
           >
-            🎵
+            <span className="hamburger-bars" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
           </button>
-          <button
-            className={`pill ${settings.sound ? "on" : ""}`}
-            onClick={() => {
-              unlockAudio();
-              toggleSetting("sound");
-            }}
-            title="Sonido"
-          >
-            🔊
-          </button>
-          <button
-            className={`pill ${settings.voice ? "on" : ""}`}
-            onClick={() => toggleSetting("voice")}
-            title="Voz"
-          >
-            🗣
-          </button>
-          <button
-            className={`pill ${settings.vibration ? "on" : ""}`}
-            onClick={() => toggleSetting("vibration")}
-            title="Vibración"
-          >
-            📳
-          </button>
+
+          {menuOpen && (
+            <div className="player-menu-panel" role="menu">
+              <button
+                className="menu-item"
+                role="menuitemcheckbox"
+                aria-checked={settings.mixWithMusic}
+                onClick={() => {
+                  unlockAudio();
+                  toggleSetting("mixWithMusic");
+                }}
+              >
+                <span className="menu-item-label">🎵 Mezclar con música</span>
+                <span className={`menu-switch ${settings.mixWithMusic ? "on" : ""}`} />
+              </button>
+              <button
+                className="menu-item"
+                role="menuitemcheckbox"
+                aria-checked={settings.sound}
+                onClick={() => {
+                  unlockAudio();
+                  toggleSetting("sound");
+                }}
+              >
+                <span className="menu-item-label">🔊 Sonido</span>
+                <span className={`menu-switch ${settings.sound ? "on" : ""}`} />
+              </button>
+              <button
+                className="menu-item"
+                role="menuitemcheckbox"
+                aria-checked={settings.voice}
+                onClick={() => toggleSetting("voice")}
+              >
+                <span className="menu-item-label">🗣 Voz</span>
+                <span className={`menu-switch ${settings.voice ? "on" : ""}`} />
+              </button>
+              <button
+                className="menu-item"
+                role="menuitemcheckbox"
+                aria-checked={settings.vibration}
+                onClick={() => toggleSetting("vibration")}
+              >
+                <span className="menu-item-label">📳 Vibración</span>
+                <span className={`menu-switch ${settings.vibration ? "on" : ""}`} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
