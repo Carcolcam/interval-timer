@@ -12,6 +12,8 @@ import {
 export interface PlayerSettings {
   sound: boolean;
   voice: boolean;
+  /** When true, voice only speaks the 3-2-1 countdown, not phase/exercise names. */
+  voiceCountdownOnly: boolean;
   vibration: boolean;
   /** When true, timer audio mixes with Spotify/Apple Music instead of pausing it. */
   mixWithMusic: boolean;
@@ -65,7 +67,7 @@ export function usePlayer(
     const s = settingsRef.current;
     if (s.sound) beepGo();
     if (s.vibration) vibrate(200);
-    if (s.voice) speak(step.name, true);
+    if (s.voice && !s.voiceCountdownOnly) speak(step.name, true);
   }, []);
 
   const stopLoop = useCallback(() => {
@@ -131,7 +133,7 @@ export function usePlayer(
           const s = settingsRef.current;
           if (s.sound) beepFinish();
           if (s.vibration) vibrate([200, 100, 200]);
-          if (s.voice) speak("Terminado", true);
+          if (s.voice && !s.voiceCountdownOnly) speak("Terminado", true);
           stopLoop();
           return idx;
         }

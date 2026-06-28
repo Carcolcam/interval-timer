@@ -24,6 +24,7 @@ function loadSettings(): PlayerSettings {
   const defaults: PlayerSettings = {
     sound: true,
     voice: true,
+    voiceCountdownOnly: false,
     vibration: true,
     mixWithMusic: true
   };

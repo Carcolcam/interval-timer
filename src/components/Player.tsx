@@ -166,6 +166,21 @@ export function Player({ workout, settings, onSettingsChange, onExit }: Props) {
                 <span className={`menu-switch ${settings.voice ? "on" : ""}`} />
               </button>
               <button
+                className={`menu-item menu-item-sub ${!settings.voice ? "disabled" : ""}`}
+                role="menuitemcheckbox"
+                aria-checked={settings.voiceCountdownOnly}
+                aria-disabled={!settings.voice}
+                onClick={() => {
+                  if (!settings.voice) return;
+                  toggleSetting("voiceCountdownOnly");
+                }}
+              >
+                <span className="menu-item-label">⏱ Solo cuenta atrás</span>
+                <span
+                  className={`menu-switch ${settings.voiceCountdownOnly ? "on" : ""}`}
+                />
+              </button>
+              <button
                 className="menu-item"
                 role="menuitemcheckbox"
                 aria-checked={settings.vibration}

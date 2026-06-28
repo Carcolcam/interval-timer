@@ -625,6 +625,14 @@ select {
 .menu-item:active {
   background: var(--surface-2);
 }
+.menu-item.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.menu-item-sub .menu-item-label {
+  padding-left: 8px;
+  font-size: 14px;
+}
 .menu-item-label {
   white-space: nowrap;
 }
