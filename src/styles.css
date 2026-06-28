@@ -545,27 +545,6 @@ select {
   align-items: center;
   gap: 10px;
 }
-.music-hint {
-  position: relative;
-  z-index: 3;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-top: 10px;
-  padding: 10px 12px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 12px;
-  font-size: 13px;
-  line-height: 1.4;
-}
-.music-hint-close {
-  flex-shrink: 0;
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.2);
-  font-size: 13px;
-}
 .player-title {
   flex: 1;
   text-align: center;
