@@ -10,7 +10,7 @@ import { invalidateVoiceCache, previewPhrase } from "../voices/playback";
 import { exportVoices, importVoices } from "../voices/export";
 import { isRecordingSupported, VoiceRecorder } from "../voices/record";
 import { saveVoiceClip } from "../voices/storage";
-import { speak } from "../audio";
+import { speak, unlockAudio, unlockSpeech } from "../audio";
 
 interface Props {
   workouts: Workout[];
@@ -19,6 +19,34 @@ interface Props {
 
 interface PhraseRow extends VoicePhraseDef {
   recorded: boolean;
+}
+
+function micErrorMessage(error: unknown): string {
+  const name =
+    typeof error === "object" && error !== null && "name" in error
+      ? String((error as { name?: string }).name)
+      : "";
+
+  if (name === "NotAllowedError" || name === "SecurityError") {
+    return [
+      "Micrófono bloqueado.",
+      "",
+      "En iPhone:",
+      "1) Abre Safari y entra a esta misma URL.",
+      "2) Toca aA > Configuración del sitio web > Micrófono > Permitir.",
+      "3) Vuelve a la app y reintenta grabar."
+    ].join("\n");
+  }
+
+  if (name === "NotFoundError") {
+    return "No se detecta micrófono disponible en este dispositivo.";
+  }
+
+  if (name === "NotReadableError") {
+    return "El micrófono está en uso por otra app (llamada, grabadora, etc.). Cierra esa app y vuelve a intentar.";
+  }
+
+  return "No se pudo acceder al micrófono. Revisa los permisos de Safari para este sitio y vuelve a intentar.";
 }
 
 export function Voices({ workouts, onBack }: Props) {
@@ -93,6 +121,7 @@ export function Voices({ workouts, onBack }: Props) {
 
   const handleRecordToggle = async (phrase: PhraseRow) => {
     if (busy) return;
+    unlockAudio();
     const recorder = recorderRef.current;
 
     if (recordingId === phrase.id) {
@@ -123,19 +152,22 @@ export function Voices({ workouts, onBack }: Props) {
     try {
       await recorder.start();
       setRecordingId(phrase.id);
-    } catch {
-      alert(
-        "No se pudo acceder al micrófono. Revisa los permisos en Ajustes del iPhone."
-      );
+    } catch (error) {
+      alert(micErrorMessage(error));
     }
   };
 
   const handlePlay = async (phrase: PhraseRow) => {
     if (playingId || recordingId) return;
+    // Unlock audio synchronously within the tap so iOS lets us play after the
+    // async IndexedDB read + decode that follow.
+    unlockAudio();
+    unlockSpeech();
     setPlayingId(phrase.id);
     try {
       if (phrase.recorded) {
-        await previewPhrase(phrase.id);
+        const ok = await previewPhrase(phrase.id);
+        if (!ok) speak(phrase.tts, true);
       } else {
         speak(phrase.tts, true);
       }

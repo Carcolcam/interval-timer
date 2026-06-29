@@ -513,6 +513,7 @@ export function playVoiceBuffer(buffer: AudioBuffer, duck: boolean): Promise<voi
       resolve();
       return;
     }
+    if (c.state === "suspended") void c.resume();
     if (duck) duckOthers();
     const src = c.createBufferSource();
     src.buffer = buffer;
