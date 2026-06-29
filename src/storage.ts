@@ -20,7 +20,7 @@ export function defaultWorkouts(): Workout[] {
     intervals: [
       mk("prepare", "¿Listos?", 10),
       mk("work", "¡Vamos!", 20),
-      mk("rest", "Respira", 10)
+      mk("rest", "Recupera", 10)
     ],
     rounds: 8,
     sets: 1,
@@ -41,7 +41,7 @@ export function defaultWorkouts(): Workout[] {
     intervals: [
       mk("prepare", "¿Listos?", 15),
       mk("work", "¡Vamos!", 40),
-      mk("rest", "Respira", 20)
+      mk("rest", "Recupera", 20)
     ],
     rounds: 6,
     sets: 3,
@@ -88,7 +88,8 @@ const NAME_MIGRATION: Record<string, string> = {
   "Preparación": "¿Listos?",
   "Prepárate": "¿Listos?",
   "Trabajo": "¡Vamos!",
-  "Descanso": "Respira",
+  "Descanso": "Recupera",
+  "Respira": "Recupera",
   "Descanso entre sets": "Recupera"
 };
 
@@ -132,7 +133,7 @@ export function emptyWorkout(): Workout {
     intervals: [
       mk("prepare", "¿Listos?", 10),
       mk("work", "¡Vamos!", 30),
-      mk("rest", "Respira", 15)
+      mk("rest", "Recupera", 15)
     ],
     exercises: [
       { id: uid(), name: "Ejercicio 1" },
