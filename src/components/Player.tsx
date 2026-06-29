@@ -44,6 +44,9 @@ export function Player({
 
   const [flashClass, setFlashClass] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  // iOS Safari has no Vibration API, so the switch can never do anything there.
+  const vibrationSupported =
+    typeof navigator !== "undefined" && "vibrate" in navigator;
   const lastFlashSec = useRef(-1);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -149,7 +152,7 @@ export function Player({
                   toggleSetting("mixWithMusic");
                 }}
               >
-                <span className="menu-item-label">🎵 Mezclar con música</span>
+                <span className="menu-item-label">Mezclar con música</span>
                 <span className={`menu-switch ${settings.mixWithMusic ? "on" : ""}`} />
               </button>
               <button
@@ -163,7 +166,7 @@ export function Player({
                   toggleSetting("duckMusic");
                 }}
               >
-                <span className="menu-item-label">🔉 Bajar al hablar</span>
+                <span className="menu-item-label">Bajar al hablar</span>
                 <span className={`menu-switch ${settings.duckMusic ? "on" : ""}`} />
               </button>
 
@@ -177,7 +180,7 @@ export function Player({
                   toggleSetting("sound");
                 }}
               >
-                <span className="menu-item-label">🔔 Pitidos</span>
+                <span className="menu-item-label">Pitidos</span>
                 <span className={`menu-switch ${settings.sound ? "on" : ""}`} />
               </button>
               <button
@@ -186,7 +189,7 @@ export function Player({
                 aria-checked={settings.voice}
                 onClick={() => toggleSetting("voice")}
               >
-                <span className="menu-item-label">🗣 Voz</span>
+                <span className="menu-item-label">Voz</span>
                 <span className={`menu-switch ${settings.voice ? "on" : ""}`} />
               </button>
               <button
@@ -199,7 +202,7 @@ export function Player({
                   toggleSetting("voiceCountdownOnly");
                 }}
               >
-                <span className="menu-item-label">🔢 Solo números</span>
+                <span className="menu-item-label">Solo números</span>
                 <span
                   className={`menu-switch ${settings.voiceCountdownOnly ? "on" : ""}`}
                 />
@@ -214,20 +217,22 @@ export function Player({
                   toggleSetting("useCustomVoices");
                 }}
               >
-                <span className="menu-item-label">🎙 Usar mis voces</span>
+                <span className="menu-item-label">Usar mis voces</span>
                 <span
                   className={`menu-switch ${settings.useCustomVoices ? "on" : ""}`}
                 />
               </button>
-              <button
-                className="menu-item"
-                role="menuitemcheckbox"
-                aria-checked={settings.vibration}
-                onClick={() => toggleSetting("vibration")}
-              >
-                <span className="menu-item-label">📳 Vibración</span>
-                <span className={`menu-switch ${settings.vibration ? "on" : ""}`} />
-              </button>
+              {vibrationSupported && (
+                <button
+                  className="menu-item"
+                  role="menuitemcheckbox"
+                  aria-checked={settings.vibration}
+                  onClick={() => toggleSetting("vibration")}
+                >
+                  <span className="menu-item-label">Vibración</span>
+                  <span className={`menu-switch ${settings.vibration ? "on" : ""}`} />
+                </button>
+              )}
 
               {onOpenVoices && (
                 <>
@@ -240,7 +245,7 @@ export function Player({
                       onOpenVoices();
                     }}
                   >
-                    <span className="menu-item-label">🎤 Grabar mis voces…</span>
+                    <span className="menu-item-label">Grabar mis voces…</span>
                   </button>
                 </>
               )}
