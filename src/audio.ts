@@ -58,14 +58,6 @@ function primeMediaChannel(): void {
   }
 }
 
-function stopMediaChannel(): void {
-  try {
-    silentLoop?.pause();
-  } catch {
-    /* ignore */
-  }
-}
-
 /** Route audio to speakers. ambient = mixes with Spotify/Apple Music. */
 export function setAudioMixWithMusic(mix: boolean): void {
   mixWithMusic = mix;
@@ -84,9 +76,11 @@ export function setAudioMixWithMusic(mix: boolean): void {
   if (ctx && masterGain) {
     masterGain.gain.value = mix ? 1.35 : 1.0;
   }
-  // Exclusive mode: keep cues audible regardless of the silent switch.
-  if (mix) stopMediaChannel();
-  else primeMediaChannel();
+  // Keep the silent media loop running in BOTH modes. It stops iOS from
+  // suspending the audio pipeline mid-workout (which can't be resumed outside a
+  // user gesture). The session *type* set above is what controls whether we mix
+  // with or pause the music, so the loop is harmless while mixing.
+  primeMediaChannel();
 }
 
 function getOutput(c: AudioContext): AudioNode {
@@ -164,6 +158,8 @@ export function resumeAudioAfterInterruption(): void {
   if (c.state === "suspended") {
     void c.resume().then(() => startKeepAlive(c));
   }
+  // Re-arm the silent loop too; iOS may have paused it during the interruption.
+  primeMediaChannel();
 }
 
 if (typeof document !== "undefined") {
@@ -633,19 +629,11 @@ function leadingSilenceOffset(buffer: AudioBuffer): number {
 /** Play a decoded clip loudly, optionally ducking background music. */
 export function playVoiceBuffer(buffer: AudioBuffer, duck: boolean): Promise<void> {
   return new Promise((resolve) => {
-    const c = ensureCtx();
+    const c = getCtx();
     if (!c) {
       resolve();
       return;
     }
-    if (c.state === "suspended") void c.resume();
-    if (duck) duckOthers();
-    const src = c.createBufferSource();
-    src.buffer = buffer;
-    const gain = c.createGain();
-    gain.gain.value = VOICE_GAIN;
-    src.connect(gain);
-    gain.connect(getOutput(c));
     let done = false;
     const finish = () => {
       if (done) return;
@@ -653,19 +641,34 @@ export function playVoiceBuffer(buffer: AudioBuffer, duck: boolean): Promise<voi
       if (duck) endDuck();
       resolve();
     };
-    src.onended = finish;
-    const offset = leadingSilenceOffset(buffer);
-    try {
-      src.start(0, offset);
-    } catch {
+    const play = () => {
+      if (duck) duckOthers();
+      const src = c.createBufferSource();
+      src.buffer = buffer;
+      const gain = c.createGain();
+      gain.gain.value = VOICE_GAIN;
+      src.connect(gain);
+      gain.connect(getOutput(c));
+      src.onended = finish;
+      const offset = leadingSilenceOffset(buffer);
       try {
-        src.start();
+        src.start(0, offset);
       } catch {
-        finish();
-        return;
+        try {
+          src.start();
+        } catch {
+          finish();
+          return;
+        }
       }
+      // Safety net if onended never fires.
+      window.setTimeout(finish, (buffer.duration - offset) * 1000 + 500);
+    };
+    // Resume first if suspended so the clip isn't dropped silently.
+    if (c.state === "suspended") {
+      void c.resume().then(play, play);
+    } else {
+      play();
     }
-    // Safety net if onended never fires.
-    window.setTimeout(finish, (buffer.duration - offset) * 1000 + 500);
   });
 }
