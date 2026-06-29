@@ -166,7 +166,7 @@ export function Player({
                   toggleSetting("duckMusic");
                 }}
               >
-                <span className="menu-item-label">Bajar al hablar</span>
+                <span className="menu-item-label">Bajar música en avisos</span>
                 <span className={`menu-switch ${settings.duckMusic ? "on" : ""}`} />
               </button>
 

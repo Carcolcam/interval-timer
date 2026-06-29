@@ -487,6 +487,16 @@ export function duckOthers(): void {
   }
 }
 
+/**
+ * Duck for a fixed window and auto-restore. Used to make each cue (beep or
+ * voice) audible even with the silent switch on, by briefly using the
+ * "playback" session. Reference counted, so back-to-back cues stay ducked.
+ */
+export function duckFor(ms: number): void {
+  duckOthers();
+  window.setTimeout(endDuck, Math.max(300, ms));
+}
+
 /** Restore the previous session shortly after the clip ends. */
 export function endDuck(): void {
   const s = getAudioSessionObj();
