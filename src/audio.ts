@@ -347,10 +347,10 @@ export function beepCountdown(
       number,
       { durationMs: number; volume: number; freq: number; wave: OscillatorType }
     > = {
-      5: { durationMs: 130, volume: 0.55, freq: 880, wave: "square" },
-      4: { durationMs: 130, volume: 0.72, freq: 1000, wave: "square" },
-      3: { durationMs: 130, volume: 0.88, freq: 1150, wave: "square" },
-      2: { durationMs: 2000, volume: 1.0, freq: 1300, wave: "square" }
+      5: { durationMs: 130, volume: 0.35, freq: 880, wave: "square" },
+      4: { durationMs: 130, volume: 0.58, freq: 1000, wave: "square" },
+      3: { durationMs: 130, volume: 0.8, freq: 1150, wave: "square" },
+      2: { durationMs: 1000, volume: 1.0, freq: 1300, wave: "square" }
     };
 
     const p = workProfiles[secondsRemaining];
