@@ -5,12 +5,16 @@ import {
   exercisePhraseId,
   type VoicePhraseDef
 } from "../voices/phrases";
-import { deleteVoiceClip, listVoiceClipIds } from "../voices/storage";
-import { invalidateVoiceCache, previewPhrase } from "../voices/playback";
+import {
+  deleteVoiceClip,
+  getVoiceClip,
+  listVoiceClipIds,
+  saveVoiceClip
+} from "../voices/storage";
+import { invalidateVoiceCache } from "../voices/playback";
 import { exportVoices, importVoices } from "../voices/export";
 import { isRecordingSupported, VoiceRecorder } from "../voices/record";
-import { saveVoiceClip } from "../voices/storage";
-import { speak, unlockAudio, unlockSpeech } from "../audio";
+import { speak, unlockSpeech } from "../audio";
 
 interface Props {
   workouts: Workout[];
@@ -52,19 +56,42 @@ function micErrorMessage(error: unknown): string {
 export function Voices({ workouts, onBack }: Props) {
   const [recordedIds, setRecordedIds] = useState<Set<string>>(new Set());
   const [recordingId, setRecordingId] = useState<string | null>(null);
-  const [playingId, setPlayingId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const recorderRef = useRef(new VoiceRecorder());
   const fileRef = useRef<HTMLInputElement | null>(null);
+  // Pre-built object URLs so preview can play synchronously inside the tap
+  // (iOS requires audio playback to start within the user gesture).
+  const clipUrlsRef = useRef<Map<string, string>>(new Map());
 
   const refreshRecorded = useCallback(async () => {
     const ids = await listVoiceClipIds();
+    const map = clipUrlsRef.current;
+    for (const [id, url] of [...map]) {
+      if (!ids.includes(id)) {
+        URL.revokeObjectURL(url);
+        map.delete(id);
+      }
+    }
+    for (const id of ids) {
+      if (!map.has(id)) {
+        const clip = await getVoiceClip(id);
+        if (clip) map.set(id, URL.createObjectURL(clip.blob));
+      }
+    }
     setRecordedIds(new Set(ids));
   }, []);
 
   useEffect(() => {
     void refreshRecorded();
   }, [refreshRecorded]);
+
+  useEffect(() => {
+    const map = clipUrlsRef.current;
+    return () => {
+      for (const url of map.values()) URL.revokeObjectURL(url);
+      map.clear();
+    };
+  }, []);
 
   const exerciseNames = useMemo(() => {
     const names = new Set<string>();
@@ -121,7 +148,6 @@ export function Voices({ workouts, onBack }: Props) {
 
   const handleRecordToggle = async (phrase: PhraseRow) => {
     if (busy) return;
-    unlockAudio();
     const recorder = recorderRef.current;
 
     if (recordingId === phrase.id) {
@@ -133,6 +159,13 @@ export function Voices({ workouts, onBack }: Props) {
         } else {
           await saveVoiceClip(phrase.id, blob);
           invalidateVoiceCache(phrase.id);
+          // Drop the stale URL so refreshRecorded rebuilds it from the new clip.
+          const map = clipUrlsRef.current;
+          const old = map.get(phrase.id);
+          if (old) {
+            URL.revokeObjectURL(old);
+            map.delete(phrase.id);
+          }
           await refreshRecorded();
         }
       } catch {
@@ -157,23 +190,24 @@ export function Voices({ workouts, onBack }: Props) {
     }
   };
 
-  const handlePlay = async (phrase: PhraseRow) => {
-    if (playingId || recordingId) return;
-    // Unlock audio synchronously within the tap so iOS lets us play after the
-    // async IndexedDB read + decode that follow.
-    unlockAudio();
-    unlockSpeech();
-    setPlayingId(phrase.id);
-    try {
-      if (phrase.recorded) {
-        const ok = await previewPhrase(phrase.id);
-        if (!ok) speak(phrase.tts, true);
-      } else {
-        speak(phrase.tts, true);
+  const handlePlay = (phrase: PhraseRow) => {
+    if (recordingId) return;
+    if (phrase.recorded) {
+      const url = clipUrlsRef.current.get(phrase.id);
+      if (url) {
+        // Play synchronously within the tap; HTMLAudio + blob URL is the most
+        // reliable way to hear a recording on iOS.
+        const audio = new Audio(url);
+        audio.volume = 1;
+        void audio.play().catch(() => {
+          unlockSpeech();
+          speak(phrase.tts, true);
+        });
+        return;
       }
-    } finally {
-      setPlayingId(null);
     }
+    unlockSpeech();
+    speak(phrase.tts, true);
   };
 
   const handleDelete = async (phraseId: string) => {
@@ -211,7 +245,6 @@ export function Voices({ workouts, onBack }: Props) {
 
   const renderPhrase = (phrase: PhraseRow) => {
     const isRec = recordingId === phrase.id;
-    const isPlaying = playingId === phrase.id;
 
     return (
       <div key={phrase.id} className={`voice-row ${isRec ? "recording" : ""}`}>
@@ -235,8 +268,8 @@ export function Voices({ workouts, onBack }: Props) {
           </button>
           <button
             className="voice-btn"
-            onClick={() => void handlePlay(phrase)}
-            disabled={!!recordingId || isPlaying}
+            onClick={() => handlePlay(phrase)}
+            disabled={!!recordingId}
             aria-label="Escuchar"
           >
             ▶

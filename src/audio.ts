@@ -433,6 +433,22 @@ function getAudioSessionObj(): { type?: string } | null {
   return s ?? null;
 }
 
+/** Switch to a recording-capable session so getUserMedia isn't blocked. */
+export function setRecordingSession(): void {
+  const s = getAudioSessionObj();
+  if (!s) return;
+  try {
+    s.type = "play-and-record";
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Restore the user's playback session (ambient/playback) after recording. */
+export function restoreAudioSession(): void {
+  configureAudioSession();
+}
+
 let duckRefCount = 0;
 let unduckTimer: number | null = null;
 

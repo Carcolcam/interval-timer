@@ -1,3 +1,5 @@
+import { restoreAudioSession, setRecordingSession } from "../audio";
+
 function pickMimeType(): string {
   if (typeof MediaRecorder === "undefined") return "";
   if (MediaRecorder.isTypeSupported("audio/mp4")) return "audio/mp4";
@@ -19,6 +21,8 @@ export class VoiceRecorder {
 
   async start(): Promise<void> {
     if (this.isRecording) return;
+    // iOS blocks the mic if the audio session is in a playback-only mode.
+    setRecordingSession();
     this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const mimeType = pickMimeType();
     this.recorder = mimeType
@@ -61,6 +65,7 @@ export class VoiceRecorder {
     this.stream = null;
     this.recorder = null;
     this.chunks = [];
+    restoreAudioSession();
   }
 }
 
