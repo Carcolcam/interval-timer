@@ -4,7 +4,7 @@ import { KIND_LABELS } from "../types";
 import { formatTime } from "../engine";
 import { usePlayer } from "../usePlayer";
 import type { PlayerSettings } from "../usePlayer";
-import { unlockAudio, setAudioMixWithMusic } from "../audio";
+import { unlockAudio, unlockSpeech, setAudioMixWithMusic } from "../audio";
 import { confirmKeepAwake, useKeepAwake } from "../useKeepAwake";
 import { ProgressRing } from "./ProgressRing";
 
@@ -269,6 +269,7 @@ export function Player({ workout, settings, onSettingsChange, onExit }: Props) {
           className="ctrl main"
           onClick={() => {
             unlockAudio();
+            unlockSpeech();
             confirmKeepAwake();
             toggle();
           }}

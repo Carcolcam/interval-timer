@@ -374,6 +374,34 @@ if (typeof window !== "undefined" && "speechSynthesis" in window) {
   window.speechSynthesis.onvoiceschanged = () => pickVoice();
 }
 
+let speechUnlocked = false;
+
+/**
+ * iOS blocks speechSynthesis until it's first triggered from a user gesture.
+ * Call this from a tap (e.g. Play) so the spoken countdown works later, even
+ * when phase announcements are disabled ("only countdown" mode).
+ */
+export function unlockSpeech(): void {
+  if (speechUnlocked) return;
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  try {
+    const u = new SpeechSynthesisUtterance(" ");
+    u.volume = 0;
+    const voice = preferredVoice ?? pickVoice();
+    if (voice) {
+      u.voice = voice;
+      u.lang = voice.lang;
+    } else {
+      u.lang = "es-ES";
+    }
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+    speechUnlocked = true;
+  } catch {
+    /* ignore */
+  }
+}
+
 export function speak(text: string, enabled: boolean): void {
   if (!enabled) return;
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
