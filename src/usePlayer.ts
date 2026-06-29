@@ -12,7 +12,7 @@ import {
   exercisePhraseId,
   phraseForStepKind
 } from "./voices/phrases";
-import { sayPhrase } from "./voices/playback";
+import { preloadVoiceClips, sayPhrase } from "./voices/playback";
 
 export interface PlayerSettings {
   sound: boolean;
@@ -24,6 +24,8 @@ export interface PlayerSettings {
   mixWithMusic: boolean;
   /** When true, prefer custom voice recordings over TTS. */
   useCustomVoices: boolean;
+  /** When true, lower background music while a custom voice clip plays. */
+  duckMusic: boolean;
 }
 
 export interface PlayerState {
@@ -70,6 +72,17 @@ export function usePlayer(
   const current = steps[currentIndex] ?? null;
   const next = steps[currentIndex + 1] ?? null;
 
+  useEffect(() => {
+    const ids = new Set<string>();
+    for (let n = 1; n <= 5; n++) ids.add(countdownPhraseId(n));
+    ids.add("finish");
+    for (const step of steps) {
+      if (step.exerciseName) ids.add(exercisePhraseId(step.exerciseName));
+      else ids.add(phraseForStepKind(step.kind));
+    }
+    void preloadVoiceClips([...ids]);
+  }, [steps]);
+
   const phraseForStep = useCallback((step: PlaybackStep) => {
     if (step.exerciseName) {
       return {
@@ -87,7 +100,7 @@ export function usePlayer(
       if (s.vibration) vibrate(200);
       if (s.voice && !s.voiceCountdownOnly) {
         const { id, text } = phraseForStep(step);
-        sayPhrase(id, text, true, s.useCustomVoices);
+        sayPhrase(id, text, true, s.useCustomVoices, s.duckMusic);
       }
     },
     [phraseForStep]
@@ -141,7 +154,8 @@ export function usePlayer(
             countdownPhraseId(whole),
             tts,
             true,
-            s.useCustomVoices
+            s.useCustomVoices,
+            s.duckMusic
           );
         }
         if (s.vibration) {
@@ -165,7 +179,7 @@ export function usePlayer(
           if (s.sound) beepFinish();
           if (s.vibration) vibrate([200, 100, 200]);
           if (s.voice && !s.voiceCountdownOnly) {
-            sayPhrase("finish", "Terminado", true, s.useCustomVoices);
+            sayPhrase("finish", "Terminado", true, s.useCustomVoices, s.duckMusic);
           }
           stopLoop();
           return idx;

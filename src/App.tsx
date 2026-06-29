@@ -29,7 +29,8 @@ function loadSettings(): PlayerSettings {
     voiceCountdownOnly: false,
     vibration: true,
     mixWithMusic: true,
-    useCustomVoices: true
+    useCustomVoices: true,
+    duckMusic: true
   };
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);

@@ -424,3 +424,117 @@ export function speak(text: string, enabled: boolean): void {
     /* ignore */
   }
 }
+
+// ---- Ducking background music (mimics native TTS behaviour) ----
+
+function getAudioSessionObj(): { type?: string } | null {
+  const s = (navigator as unknown as { audioSession?: { type?: string } })
+    .audioSession;
+  return s ?? null;
+}
+
+let duckRefCount = 0;
+let unduckTimer: number | null = null;
+
+/**
+ * Lower the volume of other apps' audio (Spotify/Apple Music) while a custom
+ * voice clip plays — the same effect iOS gives to speechSynthesis. Reference
+ * counted so consecutive countdown cues stay ducked without bouncing.
+ */
+export function duckOthers(): void {
+  const s = getAudioSessionObj();
+  if (!s) return;
+  duckRefCount++;
+  if (unduckTimer != null) {
+    clearTimeout(unduckTimer);
+    unduckTimer = null;
+  }
+  try {
+    s.type = "transient";
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Restore the previous session shortly after the clip ends. */
+export function endDuck(): void {
+  const s = getAudioSessionObj();
+  if (!s) return;
+  duckRefCount = Math.max(0, duckRefCount - 1);
+  if (duckRefCount > 0) return;
+  if (unduckTimer != null) clearTimeout(unduckTimer);
+  unduckTimer = window.setTimeout(() => {
+    try {
+      s.type = mixWithMusic ? "ambient" : "playback";
+    } catch {
+      /* ignore */
+    }
+    unduckTimer = null;
+  }, 700);
+}
+
+// ---- Custom voice clip playback through the (boosted) Web Audio graph ----
+
+const VOICE_GAIN = 1.6;
+const voiceBufferCache = new Map<string, AudioBuffer>();
+
+/** Decode a recorded clip into a cached AudioBuffer for low-latency playback. */
+export async function decodeVoiceClip(
+  key: string,
+  blob: Blob
+): Promise<AudioBuffer | null> {
+  const cached = voiceBufferCache.get(key);
+  if (cached) return cached;
+  const c = ensureCtx();
+  if (!c) return null;
+  try {
+    const arr = await blob.arrayBuffer();
+    const buffer = await new Promise<AudioBuffer>((resolve, reject) => {
+      // Callback form for broadest Safari compatibility.
+      c.decodeAudioData(arr.slice(0), resolve, reject);
+    });
+    voiceBufferCache.set(key, buffer);
+    return buffer;
+  } catch {
+    return null;
+  }
+}
+
+export function invalidateVoiceBuffer(key?: string): void {
+  if (key) voiceBufferCache.delete(key);
+  else voiceBufferCache.clear();
+}
+
+/** Play a decoded clip loudly, optionally ducking background music. */
+export function playVoiceBuffer(buffer: AudioBuffer, duck: boolean): Promise<void> {
+  return new Promise((resolve) => {
+    const c = ensureCtx();
+    if (!c) {
+      resolve();
+      return;
+    }
+    if (duck) duckOthers();
+    const src = c.createBufferSource();
+    src.buffer = buffer;
+    const gain = c.createGain();
+    gain.gain.value = VOICE_GAIN;
+    src.connect(gain);
+    gain.connect(getOutput(c));
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      if (duck) endDuck();
+      resolve();
+    };
+    src.onended = finish;
+    try {
+      src.start();
+    } catch {
+      finish();
+      return;
+    }
+    // Safety net if onended never fires.
+    window.setTimeout(finish, buffer.duration * 1000 + 500);
+  });
+}

@@ -1,64 +1,104 @@
-import { speak } from "../audio";
+import {
+  decodeVoiceClip,
+  duckOthers,
+  endDuck,
+  invalidateVoiceBuffer,
+  playVoiceBuffer,
+  speak
+} from "../audio";
 import { getVoiceClip } from "./storage";
 
-const urlCache = new Map<string, string>();
+type Playable = { buffer: AudioBuffer } | { url: string };
 
-async function getClipUrl(phraseId: string): Promise<string | null> {
-  const cached = urlCache.get(phraseId);
+const playableCache = new Map<string, Playable>();
+const knownMissing = new Set<string>();
+
+async function getPlayable(phraseId: string): Promise<Playable | null> {
+  const cached = playableCache.get(phraseId);
   if (cached) return cached;
+  if (knownMissing.has(phraseId)) return null;
+
   const clip = await getVoiceClip(phraseId);
-  if (!clip) return null;
-  const url = URL.createObjectURL(clip.blob);
-  urlCache.set(phraseId, url);
-  return url;
+  if (!clip) {
+    knownMissing.add(phraseId);
+    return null;
+  }
+
+  const buffer = await decodeVoiceClip(phraseId, clip.blob);
+  const playable: Playable = buffer
+    ? { buffer }
+    : { url: URL.createObjectURL(clip.blob) };
+  playableCache.set(phraseId, playable);
+  return playable;
+}
+
+/** Fallback path when Web Audio can't decode the recording. */
+function playUrl(url: string, duck: boolean): Promise<void> {
+  return new Promise((resolve) => {
+    const audio = new Audio(url);
+    audio.volume = 1;
+    if (duck) duckOthers();
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      if (duck) endDuck();
+      resolve();
+    };
+    audio.onended = finish;
+    audio.onerror = finish;
+    void audio.play().catch(finish);
+  });
+}
+
+function playPlayable(p: Playable, duck: boolean): Promise<void> {
+  return "buffer" in p ? playVoiceBuffer(p.buffer, duck) : playUrl(p.url, duck);
 }
 
 export function invalidateVoiceCache(phraseId?: string): void {
+  const revoke = (p?: Playable) => {
+    if (p && "url" in p) URL.revokeObjectURL(p.url);
+  };
   if (phraseId) {
-    const url = urlCache.get(phraseId);
-    if (url) URL.revokeObjectURL(url);
-    urlCache.delete(phraseId);
+    revoke(playableCache.get(phraseId));
+    playableCache.delete(phraseId);
+    knownMissing.delete(phraseId);
+    invalidateVoiceBuffer(phraseId);
   } else {
-    for (const url of urlCache.values()) URL.revokeObjectURL(url);
-    urlCache.clear();
+    for (const p of playableCache.values()) revoke(p);
+    playableCache.clear();
+    knownMissing.clear();
+    invalidateVoiceBuffer();
   }
 }
 
 export async function hasVoiceClip(phraseId: string): Promise<boolean> {
-  if (urlCache.has(phraseId)) return true;
   const clip = await getVoiceClip(phraseId);
   return clip !== null;
 }
 
+/** Decode/prepare clips ahead of time so the first cue has no lag. */
 export async function preloadVoiceClips(phraseIds: string[]): Promise<void> {
-  await Promise.all(phraseIds.map((id) => getClipUrl(id)));
-}
-
-function playAudioUrl(url: string): Promise<void> {
-  return new Promise((resolve) => {
-    const audio = new Audio(url);
-    audio.onended = () => resolve();
-    audio.onerror = () => resolve();
-    void audio.play().catch(() => resolve());
-  });
+  await Promise.all(phraseIds.map((id) => getPlayable(id)));
 }
 
 /**
  * Play a custom recording if available, otherwise speak fallback text.
- * Empty fallback = custom-only (no TTS).
+ * Empty fallback = custom-only (no TTS). `duck` lowers background music.
  */
 export function sayPhrase(
   phraseId: string,
   fallbackText: string,
   enabled: boolean,
-  useCustom = true
+  useCustom = true,
+  duck = true
 ): void {
   if (!enabled) return;
   void (async () => {
     if (useCustom) {
-      const url = await getClipUrl(phraseId);
-      if (url) {
-        await playAudioUrl(url);
+      const playable = await getPlayable(phraseId);
+      if (playable) {
+        await playPlayable(playable, duck);
         return;
       }
     }
@@ -66,10 +106,10 @@ export function sayPhrase(
   })();
 }
 
-/** Preview a clip in the voices screen (ignores TTS). */
+/** Preview a clip in the voices screen (no ducking). */
 export async function previewPhrase(phraseId: string): Promise<boolean> {
-  const url = await getClipUrl(phraseId);
-  if (!url) return false;
-  await playAudioUrl(url);
+  const playable = await getPlayable(phraseId);
+  if (!playable) return false;
+  await playPlayable(playable, false);
   return true;
 }
