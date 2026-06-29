@@ -467,9 +467,10 @@ let duckRefCount = 0;
 let unduckTimer: number | null = null;
 
 /**
- * Lower the volume of other apps' audio (Spotify/Apple Music) while a custom
- * voice clip plays — the same effect iOS gives to speechSynthesis. Reference
- * counted so consecutive countdown cues stay ducked without bouncing.
+ * Quiet other apps' audio (Spotify/Apple Music) while a custom voice clip
+ * plays. iOS "transient" would duck the music but it also mutes our own audio
+ * (WebKit bug), so we use "playback", which interrupts the music yet keeps our
+ * clip audible. Reference counted so consecutive countdown cues don't bounce.
  */
 export function duckOthers(): void {
   const s = getAudioSessionObj();
@@ -480,7 +481,7 @@ export function duckOthers(): void {
     unduckTimer = null;
   }
   try {
-    s.type = "transient";
+    s.type = "playback";
   } catch {
     /* ignore */
   }

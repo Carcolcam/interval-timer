@@ -139,6 +139,7 @@ export function Player({
 
           {menuOpen && (
             <div className="player-menu-panel" role="menu">
+              <div className="menu-section-title">Música</div>
               <button
                 className="menu-item"
                 role="menuitemcheckbox"
@@ -162,9 +163,11 @@ export function Player({
                   toggleSetting("duckMusic");
                 }}
               >
-                <span className="menu-item-label">🔉 Bajar música al hablar</span>
+                <span className="menu-item-label">🔉 Bajar al hablar</span>
                 <span className={`menu-switch ${settings.duckMusic ? "on" : ""}`} />
               </button>
+
+              <div className="menu-section-title">Avisos</div>
               <button
                 className="menu-item"
                 role="menuitemcheckbox"
@@ -174,7 +177,7 @@ export function Player({
                   toggleSetting("sound");
                 }}
               >
-                <span className="menu-item-label">🔊 Sonido</span>
+                <span className="menu-item-label">🔔 Pitidos</span>
                 <span className={`menu-switch ${settings.sound ? "on" : ""}`} />
               </button>
               <button
@@ -196,19 +199,10 @@ export function Player({
                   toggleSetting("voiceCountdownOnly");
                 }}
               >
-                <span className="menu-item-label">⏱ Solo cuenta atrás</span>
+                <span className="menu-item-label">🔢 Solo números</span>
                 <span
                   className={`menu-switch ${settings.voiceCountdownOnly ? "on" : ""}`}
                 />
-              </button>
-              <button
-                className="menu-item"
-                role="menuitemcheckbox"
-                aria-checked={settings.vibration}
-                onClick={() => toggleSetting("vibration")}
-              >
-                <span className="menu-item-label">📳 Vibración</span>
-                <span className={`menu-switch ${settings.vibration ? "on" : ""}`} />
               </button>
               <button
                 className={`menu-item menu-item-sub ${!settings.voice ? "disabled" : ""}`}
@@ -220,22 +214,35 @@ export function Player({
                   toggleSetting("useCustomVoices");
                 }}
               >
-                <span className="menu-item-label">🎙 Mis voces</span>
+                <span className="menu-item-label">🎙 Usar mis voces</span>
                 <span
                   className={`menu-switch ${settings.useCustomVoices ? "on" : ""}`}
                 />
               </button>
+              <button
+                className="menu-item"
+                role="menuitemcheckbox"
+                aria-checked={settings.vibration}
+                onClick={() => toggleSetting("vibration")}
+              >
+                <span className="menu-item-label">📳 Vibración</span>
+                <span className={`menu-switch ${settings.vibration ? "on" : ""}`} />
+              </button>
+
               {onOpenVoices && (
-                <button
-                  className="menu-item menu-item-link"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onOpenVoices();
-                  }}
-                >
-                  <span className="menu-item-label">✎ Grabar voces…</span>
-                </button>
+                <>
+                  <div className="menu-section-title">Mis voces</div>
+                  <button
+                    className="menu-item menu-item-link"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onOpenVoices();
+                    }}
+                  >
+                    <span className="menu-item-label">🎤 Grabar mis voces…</span>
+                  </button>
+                </>
               )}
             </div>
           )}
