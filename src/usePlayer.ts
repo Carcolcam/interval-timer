@@ -72,7 +72,7 @@ export function usePlayer(
   const current = steps[currentIndex] ?? null;
   const next = steps[currentIndex + 1] ?? null;
 
-  useEffect(() => {
+  const voicePhraseIds = useMemo(() => {
     const ids = new Set<string>();
     for (let n = 1; n <= 5; n++) ids.add(countdownPhraseId(n));
     ids.add("finish");
@@ -80,8 +80,18 @@ export function usePlayer(
       if (step.exerciseName) ids.add(exercisePhraseId(step.exerciseName));
       else ids.add(phraseForStepKind(step.kind));
     }
-    void preloadVoiceClips([...ids]);
+    return [...ids];
   }, [steps]);
+
+  useEffect(() => {
+    void preloadVoiceClips(voicePhraseIds);
+  }, [voicePhraseIds]);
+
+  // Once playback starts the AudioContext is unlocked, so decode clips into
+  // low-latency buffers (upgrading any HTMLAudio fallback) for tight sync.
+  useEffect(() => {
+    if (running) void preloadVoiceClips(voicePhraseIds);
+  }, [running, voicePhraseIds]);
 
   const phraseForStep = useCallback((step: PlaybackStep) => {
     if (step.exerciseName) {

@@ -15,7 +15,10 @@ const knownMissing = new Set<string>();
 
 async function getPlayable(phraseId: string): Promise<Playable | null> {
   const cached = playableCache.get(phraseId);
-  if (cached) return cached;
+  // Only a decoded buffer (low latency) is worth keeping; if we previously fell
+  // back to an HTMLAudio URL (because audio wasn't unlocked yet), try to upgrade
+  // it to a buffer now so cues stay tightly in sync.
+  if (cached && "buffer" in cached) return cached;
   if (knownMissing.has(phraseId)) return null;
 
   const clip = await getVoiceClip(phraseId);
@@ -25,9 +28,17 @@ async function getPlayable(phraseId: string): Promise<Playable | null> {
   }
 
   const buffer = await decodeVoiceClip(phraseId, clip.blob);
-  const playable: Playable = buffer
-    ? { buffer }
-    : { url: URL.createObjectURL(clip.blob) };
+  if (buffer) {
+    if (cached && "url" in cached) URL.revokeObjectURL(cached.url);
+    const playable: Playable = { buffer };
+    playableCache.set(phraseId, playable);
+    return playable;
+  }
+
+  // No audio context yet: reuse the cached URL or make one, but don't treat it
+  // as final so a later call upgrades to a buffer.
+  if (cached) return cached;
+  const playable: Playable = { url: URL.createObjectURL(clip.blob) };
   playableCache.set(phraseId, playable);
   return playable;
 }

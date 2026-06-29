@@ -609,6 +609,27 @@ export function invalidateVoiceBuffer(key?: string): void {
   else voiceBufferCache.clear();
 }
 
+const leadingSilenceCache = new WeakMap<AudioBuffer, number>();
+
+/** Seconds of near-silence at the start of a clip, so we can skip the gap a
+ *  user leaves before speaking and keep cues tightly in sync. */
+function leadingSilenceOffset(buffer: AudioBuffer): number {
+  const cached = leadingSilenceCache.get(buffer);
+  if (cached !== undefined) return cached;
+  const THRESHOLD = 0.02; // ~ -34 dBFS
+  const data = buffer.getChannelData(0);
+  let i = 0;
+  for (; i < data.length; i++) {
+    if (Math.abs(data[i]) > THRESHOLD) break;
+  }
+  // Small pre-roll so we don't clip the very first consonant.
+  const preRoll = Math.floor(buffer.sampleRate * 0.04);
+  const start = Math.max(0, i - preRoll);
+  const offset = Math.min(start / buffer.sampleRate, Math.max(0, buffer.duration - 0.05));
+  leadingSilenceCache.set(buffer, offset);
+  return offset;
+}
+
 /** Play a decoded clip loudly, optionally ducking background music. */
 export function playVoiceBuffer(buffer: AudioBuffer, duck: boolean): Promise<void> {
   return new Promise((resolve) => {
@@ -633,13 +654,18 @@ export function playVoiceBuffer(buffer: AudioBuffer, duck: boolean): Promise<voi
       resolve();
     };
     src.onended = finish;
+    const offset = leadingSilenceOffset(buffer);
     try {
-      src.start();
+      src.start(0, offset);
     } catch {
-      finish();
-      return;
+      try {
+        src.start();
+      } catch {
+        finish();
+        return;
+      }
     }
     // Safety net if onended never fires.
-    window.setTimeout(finish, buffer.duration * 1000 + 500);
+    window.setTimeout(finish, (buffer.duration - offset) * 1000 + 500);
   });
 }
