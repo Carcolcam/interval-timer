@@ -79,8 +79,9 @@ export function setAudioMixWithMusic(mix: boolean): void {
       /* ignore */
     }
   }
-  const c = getCtx();
-  if (c && masterGain) {
+  // Only adjust gain if the context already exists. NEVER create it here:
+  // on iOS an AudioContext created outside a user gesture stays silent.
+  if (ctx && masterGain) {
     masterGain.gain.value = mix ? 1.35 : 1.0;
   }
   // Exclusive mode: keep cues audible regardless of the silent switch.
@@ -587,7 +588,8 @@ export async function decodeVoiceClip(
 ): Promise<AudioBuffer | null> {
   const cached = voiceBufferCache.get(key);
   if (cached) return cached;
-  const c = ensureCtx();
+  // Don't create the context here (this can run on mount, outside a gesture).
+  const c = ctx;
   if (!c) return null;
   try {
     const arr = await blob.arrayBuffer();
