@@ -5,7 +5,6 @@ import {
   beepCountdown,
   beepFinish,
   beepGo,
-  duckFor,
   vibrate
 } from "./audio";
 import {
@@ -97,12 +96,9 @@ export function usePlayer(
   const announce = useCallback(
     (step: PlaybackStep) => {
       const s = settingsRef.current;
-      const willSpeak = s.voice && !s.voiceCountdownOnly;
-      // Make the cue audible even with the silent switch on (and duck music).
-      if (s.duckMusic && (s.sound || willSpeak)) duckFor(2600);
       if (s.sound) beepGo();
       if (s.vibration) vibrate(200);
-      if (willSpeak) {
+      if (s.voice && !s.voiceCountdownOnly) {
         const { id, text } = phraseForStep(step);
         sayPhrase(id, text, true, s.useCustomVoices, false);
       }
@@ -143,10 +139,6 @@ export function usePlayer(
       const step = steps[currentIndexRef.current];
       const isWork = step?.kind === "work";
       if (whole <= 5 && whole > 0) {
-        const longCue = isWork && whole === 1;
-        if (s.duckMusic && (s.sound || s.voice)) {
-          duckFor(longCue ? 3300 : 1600);
-        }
         if (s.sound) beepCountdown(whole, isWork);
         if (s.voice) {
           const words: Record<number, string> = {
@@ -183,7 +175,6 @@ export function usePlayer(
           setFinished(true);
           setRemaining(0);
           const s = settingsRef.current;
-          if (s.duckMusic) duckFor(2800);
           if (s.sound) beepFinish();
           if (s.vibration) vibrate([200, 100, 200]);
           if (s.voice && !s.voiceCountdownOnly) {

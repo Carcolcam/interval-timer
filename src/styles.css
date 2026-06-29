@@ -619,6 +619,12 @@ select {
 .menu-section-title:first-child {
   padding-top: 4px;
 }
+.menu-hint {
+  padding: 2px 10px 8px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--muted);
+}
 @keyframes menu-pop {
   from {
     opacity: 0;

@@ -8,6 +8,64 @@ let keepAlive: OscillatorNode | null = null;
 let masterGain: GainNode | null = null;
 let mixWithMusic = true;
 
+/**
+ * A looping silent media element. Playing an HTMLAudioElement forces iOS to
+ * treat the page audio as media "playback", which makes our Web Audio cues
+ * audible even when the ring/silent switch is on. Only used in exclusive
+ * (non-mixing) mode, where pausing the user's music is acceptable.
+ */
+let silentLoop: HTMLAudioElement | null = null;
+
+function makeSilentWavDataUri(seconds = 1): string {
+  const sampleRate = 8000;
+  const numSamples = sampleRate * seconds;
+  const buffer = new ArrayBuffer(44 + numSamples);
+  const view = new DataView(buffer);
+  const writeStr = (off: number, s: string) => {
+    for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i));
+  };
+  writeStr(0, "RIFF");
+  view.setUint32(4, 36 + numSamples, true);
+  writeStr(8, "WAVE");
+  writeStr(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate, true);
+  view.setUint16(32, 1, true);
+  view.setUint16(34, 8, true);
+  writeStr(36, "data");
+  view.setUint32(40, numSamples, true);
+  for (let i = 0; i < numSamples; i++) view.setUint8(44 + i, 128); // 8-bit silence
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return "data:audio/wav;base64," + btoa(binary);
+}
+
+function primeMediaChannel(): void {
+  try {
+    if (!silentLoop) {
+      silentLoop = new Audio(makeSilentWavDataUri(1));
+      silentLoop.loop = true;
+    }
+    void silentLoop.play().catch(() => {
+      /* ignore */
+    });
+  } catch {
+    /* ignore */
+  }
+}
+
+function stopMediaChannel(): void {
+  try {
+    silentLoop?.pause();
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Route audio to speakers. ambient = mixes with Spotify/Apple Music. */
 export function setAudioMixWithMusic(mix: boolean): void {
   mixWithMusic = mix;
@@ -25,6 +83,9 @@ export function setAudioMixWithMusic(mix: boolean): void {
   if (c && masterGain) {
     masterGain.gain.value = mix ? 1.35 : 1.0;
   }
+  // Exclusive mode: keep cues audible regardless of the silent switch.
+  if (mix) stopMediaChannel();
+  else primeMediaChannel();
 }
 
 function getOutput(c: AudioContext): AudioNode {

@@ -155,20 +155,11 @@ export function Player({
                 <span className="menu-item-label">Mezclar con música</span>
                 <span className={`menu-switch ${settings.mixWithMusic ? "on" : ""}`} />
               </button>
-              <button
-                className={`menu-item menu-item-sub ${!settings.mixWithMusic ? "disabled" : ""}`}
-                role="menuitemcheckbox"
-                aria-checked={settings.duckMusic}
-                aria-disabled={!settings.mixWithMusic}
-                onClick={() => {
-                  if (!settings.mixWithMusic) return;
-                  unlockAudio();
-                  toggleSetting("duckMusic");
-                }}
-              >
-                <span className="menu-item-label">Bajar música en avisos</span>
-                <span className={`menu-switch ${settings.duckMusic ? "on" : ""}`} />
-              </button>
+              <div className="menu-hint">
+                {settings.mixWithMusic
+                  ? "Suena sobre la música, pero quita el silencio del iPhone."
+                  : "Pausa la música, pero suena siempre (aun en silencio)."}
+              </div>
 
               <div className="menu-section-title">Avisos</div>
               <button

@@ -28,7 +28,7 @@ function loadSettings(): PlayerSettings {
     voice: true,
     voiceCountdownOnly: false,
     vibration: true,
-    mixWithMusic: true,
+    mixWithMusic: false,
     useCustomVoices: true,
     duckMusic: true
   };
