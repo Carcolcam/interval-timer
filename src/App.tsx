@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import type { Workout } from "./types";
-import {
-  emptyWorkout,
-  loadWorkouts,
-  normalizeWorkout,
-  saveWorkouts
-} from "./storage";
+import { emptyWorkout, loadWorkouts, saveWorkouts } from "./storage";
 import { uid } from "./utils";
 import { Home } from "./components/Home";
 import { Editor } from "./components/Editor";
@@ -114,29 +109,6 @@ export function App() {
     [workouts]
   );
 
-  const importWorkout = useCallback(
-    (text: string) => {
-      try {
-        const parsed = JSON.parse(text) as Workout;
-        if (!parsed.name || !Array.isArray(parsed.intervals)) {
-          throw new Error("Invalid workout");
-        }
-        const imported: Workout = normalizeWorkout({
-          ...parsed,
-          id: uid(),
-          name: `${parsed.name} (importada)`,
-          intervals: parsed.intervals.map((i) => ({ ...i, id: uid() })),
-          createdAt: Date.now(),
-          updatedAt: Date.now()
-        });
-        upsert(imported);
-      } catch {
-        alert("No he podido importar esa rutina. Revisa que sea un JSON válido.");
-      }
-    },
-    [upsert]
-  );
-
   const find = (id: string) => workouts.find((w) => w.id === id);
 
   let content: ReactNode;
@@ -193,8 +165,6 @@ export function App() {
         onDuplicate={duplicate}
         onDelete={remove}
         onExport={exportWorkout}
-        onImport={importWorkout}
-        onVoices={() => setScreen({ name: "voices" })}
       />
     );
   }

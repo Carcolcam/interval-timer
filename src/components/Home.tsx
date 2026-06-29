@@ -1,4 +1,3 @@
-import { useRef } from "react";
 import type { Workout } from "../types";
 import { formatTime, totalDuration } from "../engine";
 import { APP_VERSION } from "../version";
@@ -11,8 +10,6 @@ interface Props {
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
   onExport: (id: string) => void;
-  onImport: (text: string) => void;
-  onVoices: () => void;
 }
 
 export function Home({
@@ -22,18 +19,8 @@ export function Home({
   onEdit,
   onDuplicate,
   onDelete,
-  onExport,
-  onImport,
-  onVoices
+  onExport
 }: Props) {
-  const fileRef = useRef<HTMLInputElement | null>(null);
-
-  const handleImport = async (file: File | undefined) => {
-    if (!file) return;
-    onImport(await file.text());
-    if (fileRef.current) fileRef.current.value = "";
-  };
-
   return (
     <div className="screen home">
       <header className="home-header">
@@ -41,21 +28,6 @@ export function Home({
           <h1>Intervalos</h1>
           <p className="subtitle">Tus rutinas de entrenamiento</p>
         </div>
-        <div className="home-header-actions">
-          <button className="btn ghost" onClick={onVoices}>
-            🗣 Voces
-          </button>
-          <button className="btn ghost" onClick={() => fileRef.current?.click()}>
-            Importar
-          </button>
-        </div>
-        <input
-          ref={fileRef}
-          className="hidden-file"
-          type="file"
-          accept="application/json,.json"
-          onChange={(e) => void handleImport(e.target.files?.[0])}
-        />
       </header>
 
       <div className="list">
