@@ -10,13 +10,15 @@ import { uid } from "./utils";
 import { Home } from "./components/Home";
 import { Editor } from "./components/Editor";
 import { Player } from "./components/Player";
+import { Voices } from "./components/Voices";
 import { UpdateBanner } from "./components/UpdateBanner";
 import type { PlayerSettings } from "./usePlayer";
 
 type Screen =
   | { name: "home" }
   | { name: "editor"; id: string }
-  | { name: "player"; id: string };
+  | { name: "player"; id: string }
+  | { name: "voices" };
 
 const SETTINGS_KEY = "interval-timer:settings:v1";
 
@@ -26,7 +28,8 @@ function loadSettings(): PlayerSettings {
     voice: true,
     voiceCountdownOnly: false,
     vibration: true,
-    mixWithMusic: true
+    mixWithMusic: true,
+    useCustomVoices: true
   };
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
@@ -169,6 +172,14 @@ export function App() {
         settings={settings}
         onSettingsChange={setSettings}
         onExit={() => setScreen({ name: "home" })}
+        onOpenVoices={() => setScreen({ name: "voices" })}
+      />
+    );
+  } else if (screen.name === "voices") {
+    content = (
+      <Voices
+        workouts={workouts}
+        onBack={() => setScreen({ name: "home" })}
       />
     );
   } else {
@@ -182,6 +193,7 @@ export function App() {
         onDelete={remove}
         onExport={exportWorkout}
         onImport={importWorkout}
+        onVoices={() => setScreen({ name: "voices" })}
       />
     );
   }

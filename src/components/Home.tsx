@@ -12,6 +12,7 @@ interface Props {
   onDelete: (id: string) => void;
   onExport: (id: string) => void;
   onImport: (text: string) => void;
+  onVoices: () => void;
 }
 
 export function Home({
@@ -22,7 +23,8 @@ export function Home({
   onDuplicate,
   onDelete,
   onExport,
-  onImport
+  onImport,
+  onVoices
 }: Props) {
   const fileRef = useRef<HTMLInputElement | null>(null);
 
@@ -39,9 +41,14 @@ export function Home({
           <h1>Intervalos</h1>
           <p className="subtitle">Tus rutinas de entrenamiento</p>
         </div>
-        <button className="btn ghost" onClick={() => fileRef.current?.click()}>
-          Importar
-        </button>
+        <div className="home-header-actions">
+          <button className="btn ghost" onClick={onVoices}>
+            🗣 Voces
+          </button>
+          <button className="btn ghost" onClick={() => fileRef.current?.click()}>
+            Importar
+          </button>
+        </div>
         <input
           ref={fileRef}
           className="hidden-file"

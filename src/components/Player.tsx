@@ -13,9 +13,16 @@ interface Props {
   settings: PlayerSettings;
   onSettingsChange: (s: PlayerSettings) => void;
   onExit: () => void;
+  onOpenVoices?: () => void;
 }
 
-export function Player({ workout, settings, onSettingsChange, onExit }: Props) {
+export function Player({
+  workout,
+  settings,
+  onSettingsChange,
+  onExit,
+  onOpenVoices
+}: Props) {
   const player = usePlayer(workout, settings);
   useKeepAwake(true);
 
@@ -189,6 +196,33 @@ export function Player({ workout, settings, onSettingsChange, onExit }: Props) {
                 <span className="menu-item-label">📳 Vibración</span>
                 <span className={`menu-switch ${settings.vibration ? "on" : ""}`} />
               </button>
+              <button
+                className={`menu-item menu-item-sub ${!settings.voice ? "disabled" : ""}`}
+                role="menuitemcheckbox"
+                aria-checked={settings.useCustomVoices}
+                aria-disabled={!settings.voice}
+                onClick={() => {
+                  if (!settings.voice) return;
+                  toggleSetting("useCustomVoices");
+                }}
+              >
+                <span className="menu-item-label">🎙 Mis voces</span>
+                <span
+                  className={`menu-switch ${settings.useCustomVoices ? "on" : ""}`}
+                />
+              </button>
+              {onOpenVoices && (
+                <button
+                  className="menu-item menu-item-link"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onOpenVoices();
+                  }}
+                >
+                  <span className="menu-item-label">✎ Grabar voces…</span>
+                </button>
+              )}
             </div>
           )}
         </div>

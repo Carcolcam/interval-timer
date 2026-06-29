@@ -5,9 +5,14 @@ import {
   beepCountdown,
   beepFinish,
   beepGo,
-  speak,
   vibrate
 } from "./audio";
+import {
+  countdownPhraseId,
+  exercisePhraseId,
+  phraseForStepKind
+} from "./voices/phrases";
+import { sayPhrase } from "./voices/playback";
 
 export interface PlayerSettings {
   sound: boolean;
@@ -17,6 +22,8 @@ export interface PlayerSettings {
   vibration: boolean;
   /** When true, timer audio mixes with Spotify/Apple Music instead of pausing it. */
   mixWithMusic: boolean;
+  /** When true, prefer custom voice recordings over TTS. */
+  useCustomVoices: boolean;
 }
 
 export interface PlayerState {
@@ -63,12 +70,28 @@ export function usePlayer(
   const current = steps[currentIndex] ?? null;
   const next = steps[currentIndex + 1] ?? null;
 
-  const announce = useCallback((step: PlaybackStep) => {
-    const s = settingsRef.current;
-    if (s.sound) beepGo();
-    if (s.vibration) vibrate(200);
-    if (s.voice && !s.voiceCountdownOnly) speak(step.name, true);
+  const phraseForStep = useCallback((step: PlaybackStep) => {
+    if (step.exerciseName) {
+      return {
+        id: exercisePhraseId(step.exerciseName),
+        text: step.exerciseName
+      };
+    }
+    return { id: phraseForStepKind(step.kind), text: step.name };
   }, []);
+
+  const announce = useCallback(
+    (step: PlaybackStep) => {
+      const s = settingsRef.current;
+      if (s.sound) beepGo();
+      if (s.vibration) vibrate(200);
+      if (s.voice && !s.voiceCountdownOnly) {
+        const { id, text } = phraseForStep(step);
+        sayPhrase(id, text, true, s.useCustomVoices);
+      }
+    },
+    [phraseForStep]
+  );
 
   const stopLoop = useCallback(() => {
     if (rafRef.current != null) {
@@ -105,13 +128,21 @@ export function usePlayer(
       if (whole <= 5 && whole > 0) {
         if (s.sound) beepCountdown(whole, isWork);
         // Spoken countdown ducks music on iOS, so it's audible over Spotify.
-        if (s.voice && whole <= 3) {
+        if (s.voice && whole <= 5 && whole > 0) {
           const words: Record<number, string> = {
+            5: "cinco",
+            4: "cuatro",
             3: "tres",
             2: "dos",
             1: "uno"
           };
-          speak(words[whole], true);
+          const tts = whole <= 3 ? words[whole] : "";
+          sayPhrase(
+            countdownPhraseId(whole),
+            tts,
+            true,
+            s.useCustomVoices
+          );
         }
         if (s.vibration) {
           if (isWork && whole === 1) vibrate([300, 80, 300]);
@@ -133,7 +164,9 @@ export function usePlayer(
           const s = settingsRef.current;
           if (s.sound) beepFinish();
           if (s.vibration) vibrate([200, 100, 200]);
-          if (s.voice && !s.voiceCountdownOnly) speak("Terminado", true);
+          if (s.voice && !s.voiceCountdownOnly) {
+            sayPhrase("finish", "Terminado", true, s.useCustomVoices);
+          }
           stopLoop();
           return idx;
         }
