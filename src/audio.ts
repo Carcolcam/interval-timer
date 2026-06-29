@@ -449,6 +449,20 @@ export function restoreAudioSession(): void {
   configureAudioSession();
 }
 
+/**
+ * Force the media "playback" session so audio is heard even when the iPhone's
+ * silent/ring switch is on (unlike "ambient", which the switch mutes).
+ */
+export function setPlaybackSession(): void {
+  const s = getAudioSessionObj();
+  if (!s) return;
+  try {
+    s.type = "playback";
+  } catch {
+    /* ignore */
+  }
+}
+
 let duckRefCount = 0;
 let unduckTimer: number | null = null;
 

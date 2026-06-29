@@ -14,7 +14,7 @@ import {
 import { invalidateVoiceCache } from "../voices/playback";
 import { exportVoices, importVoices } from "../voices/export";
 import { isRecordingSupported, VoiceRecorder } from "../voices/record";
-import { speak, unlockSpeech } from "../audio";
+import { setPlaybackSession, speak, unlockSpeech } from "../audio";
 
 interface Props {
   workouts: Workout[];
@@ -195,6 +195,8 @@ export function Voices({ workouts, onBack }: Props) {
     if (phrase.recorded) {
       const url = clipUrlsRef.current.get(phrase.id);
       if (url) {
+        // "playback" session so it's audible even with the silent switch on.
+        setPlaybackSession();
         // Play synchronously within the tap; HTMLAudio + blob URL is the most
         // reliable way to hear a recording on iOS.
         const audio = new Audio(url);
