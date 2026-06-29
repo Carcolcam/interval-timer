@@ -5,6 +5,28 @@ export interface VoiceClipRecord {
   updatedAt: number;
 }
 
+/** What we actually persist. iOS Safari can fail to store a Blob directly in
+ *  IndexedDB, so we keep the raw bytes as an ArrayBuffer instead. */
+interface StoredVoiceClip {
+  phraseId: string;
+  mimeType: string;
+  data?: ArrayBuffer;
+  blob?: Blob; // legacy records recorded before the ArrayBuffer migration
+  updatedAt: number;
+}
+
+function toRecord(stored: StoredVoiceClip): VoiceClipRecord {
+  const blob =
+    stored.blob ??
+    new Blob([stored.data ?? new ArrayBuffer(0)], { type: stored.mimeType });
+  return {
+    phraseId: stored.phraseId,
+    mimeType: stored.mimeType,
+    blob,
+    updatedAt: stored.updatedAt
+  };
+}
+
 const DB_NAME = "interval-timer-voices";
 const STORE = "clips";
 const DB_VERSION = 1;
@@ -26,11 +48,12 @@ export async function saveVoiceClip(
   phraseId: string,
   blob: Blob
 ): Promise<void> {
+  const data = await blob.arrayBuffer();
   const db = await openDb();
-  const record: VoiceClipRecord = {
+  const record: StoredVoiceClip = {
     phraseId,
     mimeType: blob.type || "audio/mp4",
-    blob,
+    data,
     updatedAt: Date.now()
   };
   return new Promise((resolve, reject) => {
@@ -56,7 +79,8 @@ export async function getVoiceClip(
     const req = tx.objectStore(STORE).get(phraseId);
     req.onsuccess = () => {
       db.close();
-      resolve((req.result as VoiceClipRecord | undefined) ?? null);
+      const stored = req.result as StoredVoiceClip | undefined;
+      resolve(stored ? toRecord(stored) : null);
     };
     req.onerror = () => {
       db.close();

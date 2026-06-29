@@ -168,8 +168,10 @@ export function Voices({ workouts, onBack }: Props) {
           }
           await refreshRecorded();
         }
-      } catch {
-        alert("No se pudo guardar la grabación.");
+      } catch (error) {
+        const detail =
+          error instanceof Error ? error.message : String(error);
+        alert(`No se pudo guardar la grabación.\n\n${detail}`);
       } finally {
         setRecordingId(null);
         setBusy(false);
