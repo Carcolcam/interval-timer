@@ -157,8 +157,8 @@ export function Player({
               </button>
               <div className="menu-hint">
                 {settings.mixWithMusic
-                  ? "Suena sobre la música, pero quita el silencio del iPhone."
-                  : "Pausa la música, pero suena siempre (aun en silencio)."}
+                  ? "Suena sobre Spotify sin cortarlo (la voz baja la música sola). El iPhone debe estar SIN silencio."
+                  : "Suena siempre, aun en silencio, pero pausa la música del iPhone."}
               </div>
 
               <div className="menu-section-title">Avisos</div>
